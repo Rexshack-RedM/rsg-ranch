@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>rsg-ranch</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app" class="hidden">
+
+        <!-- ranch management -->
+        <div id="manage" class="panel dashboard hidden" data-drag="manage">
+            <header class="panel-header">
+                <div class="header-text">
+                    <h1 id="ranch-name"></h1>
+                    <div class="subtitle" id="ranch-sub"></div>
+                </div>
+                <button class="circle-btn" id="btn-close" data-t-title="ui_close">&#10005;</button>
+            </header>
+            <div class="divider"><span>&#10022;</span></div>
+
+            <div class="dash-body">
+                <nav class="tabs" id="tabs"></nav>
+                <section class="content" id="content"></section>
+            </div>
+        </div>
+
+        <!-- ranch purchase -->
+        <div id="purchase" class="panel purchase hidden" data-drag="purchase">
+            <header class="panel-header">
+                <div class="header-text">
+                    <h1 id="purchase-name"></h1>
+                    <div class="subtitle" data-t="ui_purchase_subtitle"></div>
+                </div>
+                <button class="circle-btn" data-close data-t-title="ui_close">&#10005;</button>
+            </header>
+            <div class="divider"><span>&#10022;</span></div>
+            <p class="italic center" data-t="ui_purchase_text"></p>
+            <div class="price-block">
+                <div class="price-label" data-t="ui_price"></div>
+                <div class="price-value" id="purchase-price"></div>
+                <div class="price-cash" id="purchase-cash"></div>
+            </div>
+            <div class="actions">
+                <button class="wood-btn muted" data-close data-t="ui_cancel"></button>
+                <button class="wood-btn" id="btn-purchase" data-t="ui_buy_ranch"></button>
+            </div>
+        </div>
+
+        <!-- modal -->
+        <div id="modal-backdrop" class="hidden">
+            <div class="modal panel" data-drag="modal" data-handle="h2">
+                <h2 id="modal-title"></h2>
+                <div class="ink-divider"></div>
+                <div id="modal-body"></div>
+                <div class="actions" id="modal-actions"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- context menu (replaces ox_lib context menus) -->
+    <div id="ctx-root" class="hidden">
+        <div class="panel ctx-panel" data-drag="menu">
+            <header class="panel-header ctx-header">
+                <button class="circle-btn ctx-back hidden" id="ctx-back" data-t-title="ui_back">&#10094;</button>
+                <div class="header-text"><h1 id="ctx-title"></h1></div>
+                <button class="circle-btn" id="ctx-close" data-t-title="ui_close">&#10005;</button>
+            </header>
+            <div class="divider"><span>&#10022;</span></div>
+            <div class="ctx-list" id="ctx-list"></div>
+        </div>
+    </div>
+
+    <!-- alert dialog (replaces ox_lib alertDialog) -->
+    <div id="alert-root" class="hidden">
+        <div class="modal panel" data-drag="alert" data-handle="h2">
+            <h2 id="alert-title"></h2>
+            <div class="ink-divider"></div>
+            <div id="alert-body" class="alert-body"></div>
+            <div class="actions" id="alert-actions"></div>
+        </div>
+    </div>
+
+    <div id="toasts"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>

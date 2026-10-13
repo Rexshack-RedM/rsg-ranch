@@ -1,0 +1,66 @@
+    macfarranch = {
+        label = 'Macfarlane Rancher',
+        type = 'rancher',
+        defaultDuty = true,
+        offDutyPay = false,
+        grades = {
+            ['0'] = { name = 'Trainee Rancher', payment = 3 },
+            ['1'] = { name = 'Ranch Hand', payment = 5 },
+            ['2'] = { name = 'Ranch Manager', isboss = true, payment = 0 },
+        },
+    },
+    emeraldranch = {
+        label = 'Emerald Rancher',
+        type = 'rancher',
+        defaultDuty = true,
+        offDutyPay = false,
+        grades = {
+            ['0'] = { name = 'Trainee Rancher', payment = 3 },
+            ['1'] = { name = 'Ranch Hand', payment = 5 },
+            ['2'] = { name = 'Ranch Manager', isboss = true, payment = 0 },
+        },
+    },
+    pronghornranch = {
+        label = 'Pronghorn Rancher',
+        type = 'rancher',
+        defaultDuty = true,
+        offDutyPay = false,
+        grades = {
+            ['0'] = { name = 'Trainee Rancher', payment = 3 },
+            ['1'] = { name = 'Ranch Hand', payment = 5 },
+            ['2'] = { name = 'Ranch Manager', isboss = true, payment = 0 },
+        },
+    },
+    downesranch = {
+        label = 'Downes Rancher',
+        type = 'rancher',
+        defaultDuty = true,
+        offDutyPay = false,
+        grades = {
+            ['0'] = { name = 'Trainee Rancher', payment = 3 },
+            ['1'] = { name = 'Ranch Hand', payment = 5 },
+            ['2'] = { name = 'Ranch Manager', isboss = true, payment = 0 },
+        },
+    },
+    hillhavenranch = {
+        label = 'Hill Haven Rancher',
+        type = 'rancher',
+        defaultDuty = true,
+        offDutyPay = false,
+        grades = {
+            ['0'] = { name = 'Trainee Rancher', payment = 3 },
+            ['1'] = { name = 'Ranch Hand', payment = 5 },
+            ['2'] = { name = 'Ranch Manager', isboss = true, payment = 0 },
+        },
+    },
+    hangingdogranch = {
+        label = 'Hanging Dog Rancher',
+        type = 'rancher',
+        defaultDuty = true,
+        offDutyPay = false,
+        grades = {
+            ['0'] = { name = 'Trainee Rancher', payment = 3 },
+            ['1'] = { name = 'Ranch Hand', payment = 5 },
+            ['2'] = { name = 'Ranch Manager', isboss = true, payment = 0 },
+        },
+    },
