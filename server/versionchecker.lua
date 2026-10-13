@@ -1,9 +1,9 @@
 -----------------------------------------------------------------------
--- Improved Version Checker for RexShackGaming Resources
+-- Improved Version Checker for Rexshack-RedM Resources
 ----------------------------------------------------------------------- 
-lib.locale()
+
 local resourceName = GetCurrentResourceName()
-local githubRawBase = 'https://raw.githubusercontent.com/RexShackGaming/rex-versioncheckers/main/'
+local githubRawBase = 'https://raw.githubusercontent.com/Rexshack-RedM/rsg-versioncheckers/main/'
 
 local function printLog(type, message)
     local color = (type == 'success' and '^2') or (type == 'warning' and '^3') or '^1'
@@ -61,7 +61,7 @@ local function CheckVersion()
 
         if isVersionOutdated(currentVersion, remoteVersion) then
             printLog('error', ('OUTDATED! Please update to version %s'):format(remoteVersion))
-            printLog('error', 'Download from: https://portal.cfx.re/assets/granted-assets')
+            printLog('error', 'Download from: https://github.com/Rexshack-RedM/'..GetCurrentResourceName()..'')
         else
             printLog('warning', ('You are running a newer version (%s) than the remote (%s). Possible dev build?'):format(currentVersion, remoteVersion))
         end
