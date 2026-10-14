@@ -1,6 +1,23 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
 lib.locale()
 
+-- rsg-multijob integration (exports: AddJob / RemoveJob / GetJobs).
+-- AddJob enforces rsg-multijob's own Config.MaxJobs and returns false, 'max_jobs'
+-- when the player is full, so no limit is duplicated here.
+local function MultijobAddJob(citizenid, job, grade)
+    local ok, success, reason = pcall(function() return exports['rsg-multijob']:AddJob(citizenid, job, grade) end)
+    if not ok then
+        if Config.Debug then print('^1[RANCH MULTIJOB]^7 AddJob failed: ' .. tostring(success)) end
+        return true -- don't block ranch actions if multijob is missing/broken
+    end
+    return success, reason
+end
+
+local function MultijobRemoveJob(citizenid, job)
+    local ok, res = pcall(function() return exports['rsg-multijob']:RemoveJob(citizenid, job) end)
+    return ok and res
+end
+
 -- Tracks consecutive ProcessAnimalSurvival cron failures (see cron job further down)
 local cronFailures = 0
 
@@ -179,7 +196,7 @@ local function FireAllRanchStaff(ranchid, exceptCitizenid)
         local targetPlayer = RSGCore.Functions.GetPlayer(playerId)
         if targetPlayer and targetPlayer.PlayerData.job.name == ranchid and targetPlayer.PlayerData.citizenid ~= exceptCitizenid then
             targetPlayer.Functions.SetJob('unemployed', 0)
-            exports['rsg-multijob']:RemoveJobFromPlayer(targetPlayer.PlayerData.citizenid, ranchid)
+            MultijobRemoveJob(targetPlayer.PlayerData.citizenid, ranchid)
             TriggerClientEvent('ox_lib:notify', playerId, {type = 'error', description = locale('sv_server_description_1')})
             processedCitizenIds[targetPlayer.PlayerData.citizenid] = true
         end
@@ -191,7 +208,7 @@ local function FireAllRanchStaff(ranchid, exceptCitizenid)
         for _, row in ipairs(offlineRows) do
             if row.citizenid ~= exceptCitizenid and not processedCitizenIds[row.citizenid] then
                 MySQL.update('UPDATE players SET job = JSON_SET(JSON_SET(job, "$.name", "unemployed"), "$.grade", JSON_OBJECT("level", 0, "name", "Unemployed")) WHERE citizenid = ?', {row.citizenid})
-                exports['rsg-multijob']:RemoveJobFromPlayer(row.citizenid, ranchid)
+                MultijobRemoveJob(row.citizenid, ranchid)
             end
         end
     end
@@ -3855,11 +3872,6 @@ local function HandlePurchaseRanch(src, ranchid)
         end
     end
 
-    if Player.PlayerData.job.name ~= ranchid and not exports['rsg-multijob']:CanTakeNewJob(Player.PlayerData.citizenid) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_213')})
-        return
-    end
-
     -- Verify the player is actually standing at the ranch (never trust client-supplied coords)
     local playerCoords = GetEntityCoords(GetPlayerPed(src))
     local npcCoords = vector3(ranchData.npccoords.x, ranchData.npccoords.y, ranchData.npccoords.z)
@@ -3893,8 +3905,18 @@ local function HandlePurchaseRanch(src, ranchid)
     -- Deduct money now, atomically, and check it actually succeeded before granting
     -- the ranch - the balance check above can go stale across the awaited
     -- queries here, so this is the real point of no return.
+    -- Register the ranch job with rsg-multijob first; it refuses if the player
+    -- already holds the maximum number of jobs.
+    local jobAdded, jobReason = MultijobAddJob(Player.PlayerData.citizenid, ranchid, Config.RanchBossGrade)
+    if not jobAdded then
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_213')})
+        if Config.Debug then print('^1[RANCH PURCHASE]^7 multijob AddJob refused: ' .. tostring(jobReason)) end
+        return
+    end
+
     local moneyRemoved = Player.Functions.RemoveMoney('cash', price, 'rsg-ranch-purchase')
     if not moneyRemoved then
+        MultijobRemoveJob(Player.PlayerData.citizenid, ranchid)
         TriggerClientEvent('ox_lib:notify', src, {
             type = 'error',
             description = locale('sv_server_description_178'):format(price, Player.PlayerData.money.cash)
@@ -3913,6 +3935,7 @@ local function HandlePurchaseRanch(src, ranchid)
     if not success then
         -- The database insert failed after money was already taken - refund it
         Player.Functions.AddMoney('cash', price, 'rsg-ranch-purchase-refund')
+        MultijobRemoveJob(Player.PlayerData.citizenid, ranchid)
         TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_179')})
         if Config.Debug then
             print('^1[RANCH PURCHASE ERROR]^7 Database insert failed: ' .. tostring(dbError))
@@ -4028,12 +4051,6 @@ local function HandleTransferRanch(src, ranchid, targetId)
         end
     end
 
-    local canTake = Target.PlayerData.job.name == ranchid or exports['rsg-multijob']:CanTakeNewJob(Target.PlayerData.citizenid)
-    if not canTake then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_191')})
-        return
-    end
-
     -- The new owner has to agree - ownership (and a job) was previously forced on them
     TriggerClientEvent('ox_lib:notify', src, {type = 'inform', description = locale('sv_waiting_for_answer')})
     if not RequestConsent(targetId, ranchData.name, locale('sv_transfer_offer'):format(Player.PlayerData.charinfo.firstname, Player.PlayerData.charinfo.lastname, ranchData.name)) then
@@ -4047,6 +4064,15 @@ local function HandleTransferRanch(src, ranchid, targetId)
         return
     end
 
+    -- Give the new owner the job in rsg-multijob (refused if they're at their job limit)
+    local targetHadJob = Target.PlayerData.job.name == ranchid
+    local jobAdded, jobReason = MultijobAddJob(Target.PlayerData.citizenid, ranchid, Config.RanchBossGrade)
+    if not jobAdded then
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_191')})
+        if Config.Debug then print('^1[RANCH TRANSFER]^7 multijob AddJob refused: ' .. tostring(jobReason)) end
+        return
+    end
+
     local success, dbError = pcall(function()
         return MySQL.update.await('UPDATE rsg_ranch_owners SET citizenid = ?, purchased_at = ? WHERE ranchid = ?', {
             Target.PlayerData.citizenid, os.time(), ranchid
@@ -4054,6 +4080,7 @@ local function HandleTransferRanch(src, ranchid, targetId)
     end)
 
     if not success then
+        if not targetHadJob then MultijobRemoveJob(Target.PlayerData.citizenid, ranchid) end
         TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_192')})
         if Config.Debug then
             print('^1[RANCH TRANSFER ERROR]^7 Database update failed: ' .. tostring(dbError))
@@ -4065,7 +4092,7 @@ local function HandleTransferRanch(src, ranchid, targetId)
 
     -- Move the job across: drop it from the old owner (and their multijob record),
     -- then hand it to the new owner at boss grade
-    exports['rsg-multijob']:RemoveJobFromPlayer(Player.PlayerData.citizenid, ranchid)
+    MultijobRemoveJob(Player.PlayerData.citizenid, ranchid)
     Player.Functions.SetJob('unemployed', 0)
     Target.Functions.SetJob(ranchid, Config.RanchBossGrade)
 
@@ -5494,13 +5521,6 @@ RegisterNetEvent('rsg-ranch:server:hireEmployee', function(ranchid, targetId, gr
         return
     end
 
-	-- check if the player can take the job
-	local canTake = exports['rsg-multijob']:CanTakeNewJob(Target.PlayerData.citizenid)
-	if not canTake then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_213')})
-        return
-	end
-
 	local staffCount = exports['rsg-ranch']:getStaffCount(ranchid)
 	if staffCount >= Config.StaffManagement.MaxEmployeesPerRanch then
         TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_214')})
@@ -5531,6 +5551,14 @@ RegisterNetEvent('rsg-ranch:server:hireEmployee', function(ranchid, targetId, gr
     if not Target or Target.PlayerData.job.name == ranchid then return end
     if exports['rsg-ranch']:getStaffCount(ranchid) >= Config.StaffManagement.MaxEmployeesPerRanch then
         TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_214')})
+        return
+    end
+
+    -- Register with rsg-multijob; it refuses if they already hold the maximum number of jobs
+    local jobAdded, jobReason = MultijobAddJob(Target.PlayerData.citizenid, ranchid, grade)
+    if not jobAdded then
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_213')})
+        if Config.Debug then print('^1[STAFF MANAGEMENT]^7 multijob AddJob refused: ' .. tostring(jobReason)) end
         return
     end
 
@@ -5586,7 +5614,7 @@ RegisterNetEvent('rsg-ranch:server:fireEmployee', function(ranchid, targetCitize
         -- Player is online
         Target.Functions.SetJob('unemployed', 0)
 		-- update multijob
-        exports['rsg-multijob']:RemoveJobFromPlayer(targetCitizenid, ranchid)
+        MultijobRemoveJob(targetCitizenid, ranchid)
         TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('sv_server_description_228')})
         TriggerClientEvent('ox_lib:notify', Target.PlayerData.source, {type = 'error', description = locale('sv_server_description_223'):format((GetRanchLocationData(ranchid) or {}).name or ranchid)})
     else
@@ -5611,7 +5639,7 @@ RegisterNetEvent('rsg-ranch:server:fireEmployee', function(ranchid, targetCitize
         -- update database
         MySQL.update('UPDATE players SET job = JSON_SET(JSON_SET(job, "$.name", "unemployed"), "$.grade", JSON_OBJECT("level", 0, "name", "Unemployed")) WHERE citizenid = ?', {targetCitizenid})
 		-- update multijob
-        exports['rsg-multijob']:RemoveJobFromPlayer(targetCitizenid, ranchid)
+        MultijobRemoveJob(targetCitizenid, ranchid)
         TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('sv_server_description_228')})
 
     end
