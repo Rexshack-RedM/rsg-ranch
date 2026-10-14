@@ -839,5 +839,13 @@
     "ui_dur_dh": "%sT %sStd",
     "ui_dur_hm": "%sStd %sMin",
     "ui_dur_ms": "%sMin %sS",
-    "ui_dur_s": "%sS"
+    "ui_dur_s": "%sS",
+    "sv_sell_ranch_grace": "You sold %s within the cooling-off period and received a full refund of $%s (%s%%). The ranch has been reset.",
+    "ui_sell_ranch_grace": "Cooling-off period: full refund for another %s.",
+    "sv_bull_too_young_sell": "This bull is too young to sell! Must be at least %s days old.",
+    "sv_bull_sold": "Sold Bull for $%s!",
+    "ui_direct_sale": "%s%% direct sale",
+    "ui_direct_sale_hint": "Cows and bulls sold from the ranch fetch %s%% of the sale point price, as they aren't driven to market.",
+    "sv_bull_too_young_slaughter": "This bull is too young to slaughter! Must be at least %s days old.",
+    "sv_bull_slaughtered": "Slaughtered the bull - got %sx Joint of Beef!"
 }

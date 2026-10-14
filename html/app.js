@@ -53,7 +53,7 @@ function bar(label, value) {
 }
 
 const ICONS = { a_c_cow: '&#128004;', a_c_bull_01: '&#128002;', a_c_pig_01: '&#128022;', a_c_sheep_01: '&#128017;' };
-const SPECIES_ICON = { pig: ICONS.a_c_pig_01, cow: ICONS.a_c_cow, sheep: ICONS.a_c_sheep_01 };
+const SPECIES_ICON = { pig: ICONS.a_c_pig_01, cow: ICONS.a_c_cow, bull: ICONS.a_c_bull_01 || ICONS.a_c_cow, sheep: ICONS.a_c_sheep_01 };
 
 function toast(message, type = 'info') {
     const el = document.createElement('div');
@@ -252,9 +252,9 @@ function viewMarket() {
         <div class="badge-icon">${SPECIES_ICON[m.species] || '&#10022;'}</div>
         <div class="row-main"><div class="row-title">${esc(m.label)} <span class="row-desc">#${esc(m.animalid)}</span></div>
         <div class="row-desc">${esc(t('ui_gender_' + m.gender))} · ${esc(t('ui_age_days', m.age))} · ${esc(m.ageCategory)} · ${esc(t('ui_health'))} ${Math.round(m.health)}%</div></div>
-        <div class="row-actions"><span class="pill ${m.canSell ? 'good' : ''}">${m.canSell ? money(m.salePrice) : esc(t('ui_too_young'))}</span>
+        <div class="row-actions"><span class="pill ${m.canSell ? 'good' : ''}">${m.canSell ? money(m.salePrice) : esc(t('ui_too_young'))}</span>${m.directSalePct != null && m.canSell ? `<span class="pill" title="${esc(t('ui_direct_sale_hint', m.directSalePct))}">${esc(t('ui_direct_sale', m.directSalePct))}</span>` : ''}
             <button class="wood-btn small" data-sell="${esc(m.animalid)}" data-species="${m.species}" data-price="${m.salePrice}" ${m.canSell ? '' : 'disabled'}>${esc(t('ui_sell'))}</button>
-            <button class="wood-btn small danger" data-slaughter="${esc(m.animalid)}" data-species="${m.species}" ${m.canSell ? '' : 'disabled'}>${esc(t('ui_slaughter'))}</button>
+            ${m.canSlaughter === false ? '' : `<button class="wood-btn small danger" data-slaughter="${esc(m.animalid)}" data-species="${m.species}" ${m.canSell ? '' : 'disabled'}>${esc(t('ui_slaughter'))}</button>`}
         </div></div>`).join('');
     return `<div class="section-title">${esc(t('ui_market_title'))}</div>
         <p class="italic hint">${esc(t('ui_market_hint'))}</p>
@@ -320,13 +320,15 @@ async function hireFlow() {
 
 // ---------- ranch (owner) ----------
 function viewRanch() {
-    const s = state, refund = Math.floor(s.ranchPrice * s.sellRefundPct / 100);
+    const s = state, refund = s.sellRefund ?? Math.floor(s.ranchPrice * s.sellRefundPct / 100);
+    const graceLeft = s.sellGraceLeft || 0;
+    const graceTxt = graceLeft > 0 ? ' ' + t('ui_sell_ranch_grace', Math.floor(graceLeft / 3600) + 'h ' + Math.floor((graceLeft % 3600) / 60) + 'm') : '';
     return `<div class="section-title">${esc(t('ui_tab_ranch'))}</div><div class="list">
         <div class="row"><div class="badge-icon">&#8644;</div>
             <div class="row-main"><div class="row-title">${esc(t('ui_transfer'))}</div><div class="row-desc">${esc(t('ui_transfer_desc'))}</div></div>
             <div class="row-actions"><button class="wood-btn small" id="btn-transfer">${esc(t('ui_transfer'))}</button></div></div>
         <div class="row"><div class="badge-icon">!</div>
-            <div class="row-main"><div class="row-title">${esc(t('ui_sell_ranch'))}</div><div class="row-desc">${esc(t('ui_sell_ranch_desc', money(refund), s.sellRefundPct))}</div></div>
+            <div class="row-main"><div class="row-title">${esc(t('ui_sell_ranch'))}</div><div class="row-desc">${esc(t('ui_sell_ranch_desc', money(refund), s.sellRefundPct) + graceTxt)}</div></div>
             <div class="row-actions"><button class="wood-btn small danger" id="btn-sellranch" data-refund="${refund}">${esc(t('ui_sell_ranch'))}</button></div></div>
     </div>`;
 }

@@ -147,7 +147,7 @@ local function LoadRanchOwners()
             local bossResult = MySQL.query.await('SELECT citizenid FROM players WHERE JSON_UNQUOTE(JSON_EXTRACT(job, "$.name")) = ? AND JSON_EXTRACT(job, "$.grade.level") = ? LIMIT 1', {ranchData.ranchid, Config.RanchBossGrade})
             if bossResult and bossResult[1] then
                 RanchOwners[ranchData.ranchid] = bossResult[1].citizenid
-                MySQL.insert('INSERT INTO rsg_ranch_owners (ranchid, citizenid, purchased_at) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE citizenid = VALUES(citizenid)', {ranchData.ranchid, bossResult[1].citizenid, os.time()})
+                MySQL.insert('INSERT INTO rsg_ranch_owners (ranchid, citizenid, purchased_at) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE citizenid = VALUES(citizenid)', {ranchData.ranchid, bossResult[1].citizenid, 0})
                 if Config.Debug then
                     print('^3[RANCH OWNERSHIP]^7 Migrated existing boss ' .. bossResult[1].citizenid .. ' as owner of ' .. ranchData.ranchid)
                 end
@@ -3822,6 +3822,39 @@ RSGCore.Functions.CreateCallback('rsg-ranch:server:getranchowner', function(sour
     cb(RanchOwners[ranchid])
 end)
 
+---------------------------------------------
+-- Ranch sell-back quote. Within Config.RanchSellGracePeriodHours of buying the
+-- ranch the owner gets Config.RanchSellGraceRefundPercentage (100%) back; after
+-- that it's Config.RanchSellRefundPercentage (80%). purchased_at = 0 (transferred
+-- or legacy-migrated ranches) never qualifies for the cooling-off refund.
+-- Returns refund, percentage (0-1), seconds of cooling-off remaining.
+---------------------------------------------
+local function GetRanchSellQuote(ranchid, price)
+    local row = MySQL.single.await('SELECT purchased_at FROM rsg_ranch_owners WHERE ranchid = ?', {ranchid})
+    local purchasedAt = row and tonumber(row.purchased_at) or 0
+    local graceSeconds = math.floor((Config.RanchSellGracePeriodHours or 24) * 3600)
+    local graceLeft = 0
+    if purchasedAt > 0 and graceSeconds > 0 then
+        graceLeft = math.max(0, (purchasedAt + graceSeconds) - os.time())
+    end
+    local pct = graceLeft > 0 and (Config.RanchSellGraceRefundPercentage or 1.0) or (Config.RanchSellRefundPercentage or 0.8)
+    -- clamp to 0-1 so a config typo (e.g. 80 instead of 0.8) can never pay out more than the buy price
+    pct = math.max(0.0, math.min(1.0, tonumber(pct) or 0.0))
+    return math.floor(price * pct), pct, graceLeft
+end
+
+RSGCore.Functions.CreateCallback('rsg-ranch:server:getRanchSellQuote', function(source, cb, ranchid)
+    local Player = RSGCore.Functions.GetPlayer(source)
+    if not Player or type(ranchid) ~= 'string' or RanchOwners[ranchid] ~= Player.PlayerData.citizenid then return cb(nil) end
+    local price
+    for _, r in pairs(Config.RanchLocations) do
+        if r.ranchid == ranchid then price = r.price break end
+    end
+    if not price then return cb(nil) end
+    local refund, pct, graceLeft = GetRanchSellQuote(ranchid, price)
+    cb({ refund = refund, pct = math.floor(pct * 100 + 0.5), graceLeft = graceLeft })
+end)
+
 local function HandlePurchaseRanch(src, ranchid)
     local Player = RSGCore.Functions.GetPlayer(src)
 
@@ -4074,8 +4107,10 @@ local function HandleTransferRanch(src, ranchid, targetId)
     end
 
     local success, dbError = pcall(function()
-        return MySQL.update.await('UPDATE rsg_ranch_owners SET citizenid = ?, purchased_at = ? WHERE ranchid = ?', {
-            Target.PlayerData.citizenid, os.time(), ranchid
+        -- purchased_at = 0: a transferred ranch wasn't paid for by the new owner,
+        -- so it never qualifies for the cooling-off (full) refund when sold
+        return MySQL.update.await('UPDATE rsg_ranch_owners SET citizenid = ?, purchased_at = 0 WHERE ranchid = ?', {
+            Target.PlayerData.citizenid, ranchid
         })
     end)
 
@@ -4176,8 +4211,8 @@ local function HandleSellRanch(src, ranchid)
 
     if not IsNearRanch(src, ranchid) then return NotifyNotNearRanch(src) end
 
-    local refundPercentage = Config.RanchSellRefundPercentage or 0.5
-    local refund = math.floor(price * refundPercentage)
+    -- 100% inside the cooling-off period after purchase, Config.RanchSellRefundPercentage after
+    local refund, refundPercentage, graceLeft = GetRanchSellQuote(ranchid, price)
 
     -- Empty every storage first. Only the storage rows used to be deleted, so the
     -- stash contents stayed in rsg-inventory and reappeared for whoever bought
@@ -4186,7 +4221,19 @@ local function HandleSellRanch(src, ranchid)
         pcall(function() exports['rsg-inventory']:ClearStash(storage.storageid) end)
     end
 
+    -- Reset the ranch to default: grab the ids of everything placed/kept on it so
+    -- clients can despawn them, then wipe livestock, props, orders, storages and ownership
+    local removed = { animals = {}, feedtroughs = {}, watertroughs = {}, coops = {} }
     local success, dbError = pcall(function()
+        removed.animals      = MySQL.query.await('SELECT animalid FROM rsg_ranch_animals WHERE ranchid = ?', {ranchid}) or {}
+        removed.feedtroughs  = MySQL.query.await('SELECT feedtroughid FROM rsg_ranch_feedtroughs WHERE ranchid = ?', {ranchid}) or {}
+        removed.watertroughs = MySQL.query.await('SELECT watertroughid FROM rsg_ranch_watertroughs WHERE ranchid = ?', {ranchid}) or {}
+        removed.coops        = MySQL.query.await('SELECT coopid FROM rsg_ranch_chickencoops WHERE ranchid = ?', {ranchid}) or {}
+
+        MySQL.query.await('DELETE FROM rsg_ranch_animals WHERE ranchid = ?', {ranchid})
+        MySQL.query.await('DELETE FROM rsg_ranch_feedtroughs WHERE ranchid = ?', {ranchid})
+        MySQL.query.await('DELETE FROM rsg_ranch_watertroughs WHERE ranchid = ?', {ranchid})
+        MySQL.query.await('DELETE FROM rsg_ranch_chickencoops WHERE ranchid = ?', {ranchid})
         MySQL.query.await('DELETE FROM rsg_ranch_orders WHERE ranchid = ?', {ranchid})
         MySQL.query.await('DELETE FROM rsg_ranch_storages WHERE ranchid = ?', {ranchid})
         return MySQL.query.await('DELETE FROM rsg_ranch_owners WHERE ranchid = ?', {ranchid})
@@ -4203,6 +4250,12 @@ local function HandleSellRanch(src, ranchid)
     -- Mark as unowned immediately so the ranch can be re-purchased right away
     RanchOwners[ranchid] = nil
 
+    -- Despawn everything that was on the ranch for every client
+    for _, r in ipairs(removed.animals) do TriggerClientEvent('rsg-ranch:client:removeAnimal', -1, r.animalid) end
+    for _, r in ipairs(removed.feedtroughs) do TriggerClientEvent('rsg-ranch:client:removeFeedTrough', -1, r.feedtroughid) end
+    for _, r in ipairs(removed.watertroughs) do TriggerClientEvent('rsg-ranch:client:removeWaterTrough', -1, r.watertroughid) end
+    for _, r in ipairs(removed.coops) do TriggerClientEvent('rsg-ranch:client:removeChickenCoop', -1, r.coopid) end
+
     -- Fire every member of staff, including the selling boss - the ranch is closing entirely
     FireAllRanchStaff(ranchid, nil)
 
@@ -4210,7 +4263,9 @@ local function HandleSellRanch(src, ranchid)
 
     TriggerClientEvent('ox_lib:notify', src, {
         type = 'success',
-        description = locale('sv_server_description_203'):format(ranchData.name, refund)
+        description = graceLeft > 0
+            and locale('sv_sell_ranch_grace'):format(ranchData.name, refund, math.floor(refundPercentage * 100 + 0.5))
+            or locale('sv_server_description_203'):format(ranchData.name, refund, math.floor(refundPercentage * 100 + 0.5))
     })
 
     if Config.ServerNotify then
@@ -5774,6 +5829,11 @@ local MarketSpecies = {
         item = function() return Config.BeefJointItem or 'beefjoint' end,
         msg = { tooYoungSell = 269, sold = 271, tooYoungSlaughter = 278, noSpace = 279, slaughtered = 281 },
     },
+    a_c_bull_01 = {
+        key = 'bull', yield = function() return Config.BullSlaughterYield or { min = 4, max = 8 } end,
+        item = function() return Config.BeefJointItem or 'beefjoint' end,
+        msg = { tooYoungSell = 'sv_bull_too_young_sell', sold = 'sv_bull_sold', tooYoungSlaughter = 'sv_bull_too_young_slaughter', noSpace = 279, slaughtered = 'sv_bull_slaughtered' },
+    },
     a_c_sheep_01 = {
         key = 'sheep', yield = function() return Config.SheepSlaughterYield or { min = 2, max = 4 } end,
         item = function() return Config.MuttonJointItem or 'muttonjoint' end,
@@ -5781,7 +5841,22 @@ local MarketSpecies = {
     },
 }
 
-local function MarketMsg(n) return locale('sv_server_description_' .. n) end
+local function MarketMsg(n)
+    if type(n) == 'string' then return locale(n) end
+    return locale('sv_server_description_' .. n)
+end
+
+-- Direct-sale price from the ranch menu. Cows & bulls (Config.DirectSaleModels) get
+-- Config.DirectSalePercentage of the normal price, since they aren't driven to market.
+local function RanchDirectSalePrice(model, ageDays)
+    local price, ageCategory = CalculateAnimalSalePrice(model, ageDays)
+    local direct = Config.DirectSaleModels and Config.DirectSaleModels[model] == true
+    if direct then
+        local pct = math.max(0.0, math.min(1.0, tonumber(Config.DirectSalePercentage) or 0.8))
+        price = math.floor(price * pct)
+    end
+    return price, ageCategory, direct
+end
 local function NotifyError(src, text) TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = text}) end
 
 local function AnimalAgeDays(row)
@@ -5801,14 +5876,14 @@ RSGCore.Functions.CreateCallback('rsg-ranch:server:getRanchMarket', function(src
         return
     end
 
-    local rows = MySQL.query.await('SELECT animalid, model, gender, age, born, health FROM rsg_ranch_animals WHERE ranchid = ? AND model IN (?, ?, ?)', {
-        ranchid, 'a_c_pig_01', 'a_c_cow', 'a_c_sheep_01'
+    local rows = MySQL.query.await('SELECT animalid, model, gender, age, born, health FROM rsg_ranch_animals WHERE ranchid = ? AND model IN (?, ?, ?, ?)', {
+        ranchid, 'a_c_pig_01', 'a_c_cow', 'a_c_bull_01', 'a_c_sheep_01'
     }) or {}
 
     local list = {}
     for _, row in ipairs(rows) do
         local age = AnimalAgeDays(row)
-        local salePrice, ageCategory = CalculateAnimalSalePrice(row.model, age)
+        local salePrice, ageCategory, direct = RanchDirectSalePrice(row.model, age)
         list[#list + 1] = {
             animalid = row.animalid,
             model = row.model,
@@ -5819,6 +5894,8 @@ RSGCore.Functions.CreateCallback('rsg-ranch:server:getRanchMarket', function(src
             health = row.health or 100,
             salePrice = salePrice,
             canSell = age >= Config.MinAgeToSell,
+            canSlaughter = not MarketSpecies[row.model].noSlaughter,
+            directSalePct = direct and math.floor(math.max(0.0, math.min(1.0, tonumber(Config.DirectSalePercentage) or 0.8)) * 100 + 0.5) or nil,
         }
     end
     cb(list)
@@ -5854,6 +5931,10 @@ local function ValidateMarketAnimal(src, animalid, tooYoungKey)
         return NotifyError(src, MarketMsg(249))
     end
 
+    if tooYoungKey == 'tooYoungSlaughter' and species.noSlaughter then
+        return NotifyError(src, MarketMsg(248))
+    end
+
     animal.ageDays = AnimalAgeDays(animal)
     if animal.ageDays < Config.MinAgeToSell then
         return NotifyError(src, MarketMsg(species.msg[tooYoungKey]):format(Config.MinAgeToSell))
@@ -5870,8 +5951,8 @@ RegisterNetEvent('rsg-ranch:server:sellAtRanch', function(animalid)
     local Player, animal, species = ValidateMarketAnimal(src, animalid, 'tooYoungSell')
     if not Player then return end
 
-    -- Price is always recomputed server-side
-    local salePrice = CalculateAnimalSalePrice(animal.model, animal.ageDays)
+    -- Price is always recomputed server-side (cows & bulls get the reduced direct-sale price)
+    local salePrice = RanchDirectSalePrice(animal.model, animal.ageDays)
 
     -- Only pay out if THIS request deleted the animal (stops spam double-sells)
     local deleted = MySQL.update.await('DELETE FROM rsg_ranch_animals WHERE animalid = ?', {animal.animalid})

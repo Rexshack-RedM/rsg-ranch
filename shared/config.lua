@@ -283,6 +283,7 @@ Config.PorkJointItem = 'porkjoint' -- item given for each joint of pork produced
 -- cow slaughter settings
 ---------------------------------
 Config.CowSlaughterYield = { min = 3, max = 6 } -- joints of beef produced when a cow is sent for slaughter
+Config.BullSlaughterYield = { min = 4, max = 8 } -- joints of beef produced when a bull is sent for slaughter
 Config.BeefJointItem = 'beefjoint' -- item given for each joint of beef produced
 ---------------------------------
 
@@ -319,6 +320,17 @@ Config.BaseSellPrices = {
     ['a_c_cow'] = 150,
     ['a_c_pig_01'] = 120,
     ['a_c_sheep_01'] = 110
+}
+
+---------------------------------
+-- Direct sale from the ranch menu (cows & bulls)
+---------------------------------
+-- Cows and bulls can be sold straight from the ranch menu instead of being herded
+-- to a sale point. Because nobody is driving them to market, they fetch a reduced price.
+Config.DirectSalePercentage = 0.8 -- percentage of the normal sale price paid for a direct sale (0.8 = 80%, capped 0.0 - 1.0)
+Config.DirectSaleModels = {       -- models the reduced direct-sale price applies to (pigs & sheep keep full price)
+    ['a_c_cow'] = true,
+    ['a_c_bull_01'] = true,
 }
 
 ---------------------------------
@@ -525,7 +537,13 @@ Config.RanchPurchaseDistance = 3.0 -- how close (in the world) a player must be 
 Config.RanchTransferDistance = 5.0 -- how close the current owner must be to the target player to transfer ownership
 Config.RanchMenuDistance = 15.0 -- server-enforced: how close a player must be to their ranch NPC to use the ranch menu (storage, market, orders, staff, sell/transfer)
 Config.RanchConsentTimeout = 20 -- seconds a player has to accept a job offer or ranch transfer before it is cancelled
-Config.RanchSellRefundPercentage = 0.5 -- percentage of the original purchase price refunded when a ranch is sold outright (0.5 = 50%)
+Config.RanchSellGracePeriodHours = 24 -- cooling-off period (hours) after buying a ranch; selling within it refunds Config.RanchSellGraceRefundPercentage (0 = disable)
+-- Refund percentages are capped between 0.0 and 1.0 - anything above 1.0 is treated as 1.0 (100%)
+Config.RanchSellGraceRefundPercentage = 1.0 -- refund when sold within the cooling-off period (1.0 = 100% of the buy price)
+Config.RanchSellRefundPercentage = 0.8 -- refund when sold after the cooling-off period has passed (0.8 = 80% of the buy price)
+-- Note: selling a ranch resets it to default - all livestock, feed/water troughs, chicken coops,
+-- storages, supply orders and staff are removed. Ranches received by transfer never get the
+-- cooling-off refund, only Config.RanchSellRefundPercentage.
 
 ---------------------------------
 -- ranch locations

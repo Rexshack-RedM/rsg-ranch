@@ -82,9 +82,19 @@ local function BuildRanchPayload(ranchid)
         herdingEnabled = Config.HerdingEnabled == true,
         cash = PlayerData.money.cash or 0,
         maxAnimals = Config.MaxRanchAnimals,
-        sellRefundPct = math.floor((Config.RanchSellRefundPercentage or 0.5) * 100),
+        sellRefundPct = math.floor(math.max(0.0, math.min(1.0, tonumber(Config.RanchSellRefundPercentage) or 0.8)) * 100 + 0.5),
         ranchPrice = ranch and ranch.price or 0,
     }
+
+    -- live sell-back quote (100% inside the cooling-off period, Config % after)
+    if payload.isOwner then
+        local quote = Await('rsg-ranch:server:getRanchSellQuote', ranchid)
+        if quote then
+            payload.sellRefund = quote.refund
+            payload.sellRefundPct = quote.pct
+            payload.sellGraceLeft = quote.graceLeft
+        end
+    end
 
     -- herd overview (all staff)
     local overview = Await('rsg-ranch:server:getAnimalOverview', ranchid) or {}
