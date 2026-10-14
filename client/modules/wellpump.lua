@@ -10,11 +10,11 @@ local busy    = false
 local ownProps = {}  -- [entity] = true for props we spawned
 
 local CONTROLS = {
-    place   = 0x07CE1E61, -- LMB
+    place   = 0xC7B5340A, -- ENTER
     cancel  = 0xF84FA74F, -- RMB
     cancel2 = 0x156F7119, -- Backspace
-    rotL    = 0xDE794E3E, -- Q
-    rotR    = 0xCEFD9220, -- E
+    rotL    = 0xA65EBAB4, -- Arrow Left
+    rotR    = 0xDEB34313, -- Arrow Right
     up      = 0x6319DB71, -- Arrow Up
     down    = 0x05CA7C52, -- Arrow Down
 }

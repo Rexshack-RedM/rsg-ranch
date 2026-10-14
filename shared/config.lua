@@ -126,7 +126,7 @@ Config.WanderPositionSaveInterval = 30000 -- How often (ms) a freely wandering a
 -- keybinds (prop placement)
 ---------------------------------
 Config.Keybinds = {
-    PlaceConfirm = 'E', -- confirm placement (looked up via RSGCore.Shared.Keybinds)
+    PlaceConfirm = 'ENTER', -- confirm placement (looked up via RSGCore.Shared.Keybinds)
     PlaceCancel = 'BACKSPACE', -- cancel placement (looked up via RSGCore.Shared.Keybinds)
     RotateLeft = 174, -- INPUT_FRONTEND_LEFT (Left Arrow / DPad Left) - rotate prop left while placing
     RotateRight = 175, -- INPUT_FRONTEND_RIGHT (Right Arrow / DPad Right) - rotate prop right while placing
