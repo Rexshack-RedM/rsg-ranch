@@ -153,3 +153,33 @@ CREATE TABLE IF NOT EXISTS `rsg_ranch_chickencoops` (
   UNIQUE KEY `unique_coopid` (`coopid`),
   KEY `idx_ranchid` (`ranchid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS `rsg_ranch_settings` (
+  `ranchid` varchar(50) NOT NULL,
+  `name` varchar(100) DEFAULT NULL,
+  `blipname` varchar(100) DEFAULT NULL,
+  `price` int(10) unsigned DEFAULT NULL,
+  `showblip` tinyint(1) DEFAULT NULL,
+  `updated_by` varchar(50) DEFAULT NULL,
+  `updated_at` int(10) unsigned DEFAULT NULL,
+  PRIMARY KEY (`ranchid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `rsg_ranch_custom` (
+  `ranchid` varchar(50) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `price` int(10) unsigned NOT NULL DEFAULT 5000,
+  `npcmodel` varchar(60) NOT NULL DEFAULT 'g_m_m_uniranchers_01',
+  `npc_x` float NOT NULL,
+  `npc_y` float NOT NULL,
+  `npc_z` float NOT NULL,
+  `npc_w` float NOT NULL DEFAULT 0,
+  `spawn_x` float NOT NULL,
+  `spawn_y` float NOT NULL,
+  `spawn_z` float NOT NULL,
+  `spawn_w` float NOT NULL DEFAULT 0,
+  `blipsprite` varchar(60) NOT NULL DEFAULT 'blip_ambient_herd',
+  `blipscale` float NOT NULL DEFAULT 0.2,
+  `created_by` varchar(50) DEFAULT NULL,
+  `created_at` int(10) unsigned DEFAULT NULL,
+  PRIMARY KEY (`ranchid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

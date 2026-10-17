@@ -817,21 +817,6 @@ function SpawnManager:GetPendingCount()
     return count
 end
 
--- Clean up stale pending requests
-function SpawnManager:CleanupPendingRequests()
-    local currentTime = GetGameTimer()
-    local timeout = 10000 -- 10 second timeout
-    
-    for animalId, requestData in pairs(self.pending) do
-        if (currentTime - requestData.timestamp) > timeout then
-            self.pending[animalId] = nil
-            if Config.Debug then
-                print('^3[SPAWN MANAGER]^7 Cleaned up stale spawn request for animal ' .. animalId)
-            end
-        end
-    end
-end
-
 -- Get animal entity by ID (for other systems)
 function SpawnManager:GetEntityById(animalId)
     local animalInfo = self.entities[tostring(animalId)]

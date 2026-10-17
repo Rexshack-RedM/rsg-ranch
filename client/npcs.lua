@@ -51,19 +51,41 @@ local function DespawnRanchPed(ped)
     DeletePed(ped)
 end
 
+-- peds are keyed by ranchid (not list index) so admin-created ranches can be
+-- added, moved or deleted at runtime without leaving orphaned NPCs behind
+local spawnedAt = {}
+
 CreateThread(function()
     while true do
         local playerCoords = GetEntityCoords(cache.ped)
+        local present = {}
 
-        for k, npcData in pairs(Config.RanchLocations) do
+        for _, npcData in pairs(Config.RanchLocations) do
+            local k = npcData.ranchid
+            present[k] = true
             local npcCoords = vector3(npcData.npccoords.x, npcData.npccoords.y, npcData.npccoords.z)
             local distance = #(playerCoords - npcCoords)
 
+            -- NPC was moved by an admin: respawn it at the new spot
+            if spawnedPeds[k] and spawnedAt[k] and #(spawnedAt[k] - npcCoords) > 0.5 then
+                DespawnRanchPed(spawnedPeds[k])
+                spawnedPeds[k], spawnedAt[k] = nil, nil
+            end
+
             if distance < Config.DistanceSpawn and not spawnedPeds[k] then
                 spawnedPeds[k] = SpawnRanchPed(npcData)
+                spawnedAt[k] = npcCoords
             elseif distance >= Config.DistanceSpawn and spawnedPeds[k] then
                 DespawnRanchPed(spawnedPeds[k])
-                spawnedPeds[k] = nil
+                spawnedPeds[k], spawnedAt[k] = nil, nil
+            end
+        end
+
+        -- ranch deleted by an admin
+        for k, ped in pairs(spawnedPeds) do
+            if not present[k] then
+                DespawnRanchPed(ped)
+                spawnedPeds[k], spawnedAt[k] = nil, nil
             end
         end
 

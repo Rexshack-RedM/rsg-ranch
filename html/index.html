@@ -50,6 +50,29 @@
             </div>
         </div>
 
+        <!-- ranch admin -->
+        <div id="admin" class="panel dashboard admin hidden" data-drag="admin">
+            <header class="panel-header">
+                <div class="header-text">
+                    <h1 data-t="ui_adm_title"></h1>
+                    <div class="subtitle" id="adm-sub"></div>
+                </div>
+                <button class="circle-btn" id="adm-close" data-t-title="ui_close">&#10005;</button>
+            </header>
+            <div class="divider"><span>&#10022;</span></div>
+            <div class="dash-body">
+                <aside class="adm-side">
+                    <input id="adm-search" type="text" data-t-ph="ui_adm_search">
+                    <button class="wood-btn" id="adm-new-ranch" data-t="ui_adm_new_ranch"></button>
+                    <div class="adm-ranches" id="adm-ranches"></div>
+                </aside>
+                <section class="adm-main">
+                    <nav class="adm-tabs" id="adm-tabs"></nav>
+                    <div class="content" id="adm-content"></div>
+                </section>
+            </div>
+        </div>
+
         <!-- modal -->
         <div id="modal-backdrop" class="hidden">
             <div class="modal panel" data-drag="modal" data-handle="h2">
@@ -87,5 +110,6 @@
     <div id="toasts"></div>
 
     <script src="app.js"></script>
+    <script src="admin.js"></script>
 </body>
 </html>

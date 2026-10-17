@@ -9,7 +9,7 @@ A complete livestock ranching system for **RedM** servers running the **RSG Fram
 ## Features
 
 ### Ranch ownership
-- Six purchasable ranches out of the box (Macfarlane, Emerald, Pronghorn, Downes, Hill Haven, Hanging Dog). Add or remove them in the config.
+- Six purchasable ranches out of the box (Macfarlane, Emerald, Pronghorn, Downes, Hill Haven, Hanging Dog). Add more in the config, or create them in game from the admin panel.
 - Buy an unowned ranch from its ranch NPC and become its boss.
 - Hand the ranch to another nearby player (they must accept), or sell it back for a configurable refund.
 - One ranch per character.
@@ -93,13 +93,15 @@ A full NUI dashboard opened at the ranch NPC, with tabs for:
 
 4. **Images.** Add a PNG for each new item to `rsg-inventory/html/images/`, named after the item (for example `feedtrough.png`). The ranch menu uses these images too.
 
-5. **Jobs.** Copy the jobs from `installation/shared_jobs.lua` into `rsg-core/shared/jobs.lua`. Every ranch job has three grades:
+5. **Jobs.** Job definitions live in rsg-multijob's database (`multijob_jobs`). Each ranch needs a job with the same name as its `ranchid`; `installation/shared_jobs.lua` has the six default ranch jobs to add there (or to `rsg-core/shared/jobs.lua` on older setups). Ranches created in the admin panel register their own job automatically. Every ranch job has three grades:
 
    | Grade | Name | Can do |
    |---|---|---|
    | 0 | Trainee Rancher | Care for animals, view the herd |
-   | 1 | Ranch Hand | Plus storage, market, supplies, herding and selling |
-   | 2 | Ranch Manager (boss) | Plus staff management and the ranch tab |
+   | 1 | Ranch Hand | Plus storage, market, supplies, herding, breeding and collecting produce |
+   | 2 | Ranch Manager (boss) | Plus buying and selling livestock, staff management and the ranch tab |
+
+   What each grade may do is set in `Config.StaffManagement.Permissions` and enforced on the server.
 
 6. **Language** (optional). Set your language in `server.cfg`:
    ```cfg
@@ -129,12 +131,13 @@ Everything is in `shared/config.lua`, and each option has a comment explaining i
 | **Breeding** | `Config.BreedingEnabled`, `Config.BreedingConfig`, `Config.GenderSpecificCooldowns`, `Config.MinAgeForBreeding`, health/hunger/thirst requirements, automatic breeding options |
 | **Produce** | `Config.AnimalProducts` (item, amount, production time and requirements per animal) |
 | **Herding** | `Config.HerdingEnabled`, `Config.HerdingDistance`, `Config.HerdingMaxAnimals`, `Config.HerdingTimeout`, `Config.RequireHerdingTool` |
-| **Staff** | `Config.StaffManagement` (min grade to manage, max employees) |
+| **Staff** | `Config.StaffManagement` (min grade to manage, max employees, per-grade `Permissions`: `canSell`, `canBuy`, `canBreed`, `canCollectProducts`) |
+| **Admin panel** | `Config.Admin` (command, permission groups, ACE, console logging) |
 | **Supplies** | `Config.OrderSupplies` (catalogue, prices, delivery times, limits) |
 | **Wandering and blips** | `Config.AnimalWanderingEnabled`, `Config.WanderRadius`, `Config.AnimalBlipsEnabled` |
 | **Ambient clear** | `Config.RanchAmbientClear` (radius, intervals, per-ranch overrides) |
 
-**Adding a ranch:** add an entry to `Config.RanchLocations` with a unique `ranchid`, add a matching job (same name as the `ranchid`) to `rsg-core/shared/jobs.lua`, then restart.
+**Adding a ranch:** the easiest way is **+ New Ranch** in `/ranchadmin` (see below). To add one by hand instead, add an entry to `Config.RanchLocations` with a unique `ranchid`, add a matching job (same name as the `ranchid`), then restart.
 
 **Translations:** all text lives in `locales/*.json`. Edit those files to change any wording, or copy `en.json` to add a new language.
 
@@ -176,6 +179,36 @@ Open the **Staff** tab to hire a nearby player (they get an accept/decline promp
 | `/herdselectstatus` | Show how many animals you have selected for herding |
 | `/herdclear` | Clear your herding selection |
 | `/cleanupranchanimals` | Respawn your local ranch animals if any get stuck or duplicated |
+| `/ranchadmin` | Open the ranch admin panel (admins only) |
+
+---
+
+## Ranch admin panel
+
+Admin staff manage every ranch from one panel with **`/ranchadmin`**. Access is set in `Config.Admin`: any rsg-core permission group in `Permissions` (default `admin`, `god`), or anyone with the `command.ranchadmin` ACE.
+
+The left side lists every ranch with its owner and counts, and can be searched by ranch name, id or owner. Wherever a player is needed (owner, new staff) you search the `players` table by name or citizen ID and pick from the results; online players are listed first with their server ID.
+
+| Tab | What admins can do |
+|---|---|
+| Ownership | See the owner, assign or transfer ownership (online or offline players), remove the owner (ranch goes back on sale, assets kept), teleport to the animal spawn, or fully reset the ranch with no refund |
+| Staff | Hire at any grade, change grades, fire one or all (online and offline, rsg-multijob kept in sync) |
+| Livestock | Filter the herd, edit health / hunger / thirst / age / product ready, teleport to an animal, delete one or all, heal and feed everything |
+| Troughs & Coops | Set trough uses, edit coop chickens / eggs / feed, teleport to or delete any of them |
+| Storage | Add free storages, edit label / slots / weight / minimum grade, empty a stash, delete extra storages |
+| Orders | Make a supply order ready immediately, or delete it |
+| Settings | Override display name, blip name, blip visibility and purchase price. Saved to `rsg_ranch_settings`, applied live for everyone and kept across restarts. "Reset to Config" drops the override |
+
+### Creating a ranch in game
+1. Stand where the ranch NPC should be, facing the way it should face.
+2. In `/ranchadmin`, click **+ New Ranch**, enter a name and price (the ranch ID / job name is filled in from the name) and click **Create Ranch**.
+3. The NPC and blip appear straight away for everyone and the ranch goes on sale. The animal spawn point starts 10 m in front of you.
+
+Panel-created ranches are marked ★. Their Ownership tab adds **Set NPC here**, **Set animal spawn here** and **Delete Ranch** (removes the ranch, everything on it, its staff and its job). They're stored in `rsg_ranch_custom` and load back after a restart. The six config ranches can't be moved or deleted from the panel.
+
+> rsg-multijob only reads job definitions when it starts, so a new ranch's job appears in players' multijob lists after `ensure rsg-multijob` or the next server restart. Assigning the job works immediately.
+
+Every admin action is re-checked on the server and printed to the server console when `Config.Admin.Log = true`.
 
 ---
 

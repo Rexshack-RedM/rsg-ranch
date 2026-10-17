@@ -18,21 +18,69 @@ local function AddLocationBlips(locations)
     end
 end
 
-CreateThread(function()
+local function ClearLocationBlips()
+    for _, blip in ipairs(createdBlips) do
+        if DoesBlipExist(blip) then RemoveBlip(blip) end
+    end
+    createdBlips = {}
+end
+
+function RebuildRanchBlips()
+    ClearLocationBlips()
     AddLocationBlips(Config.RanchLocations)
     AddLocationBlips(Config.BuyPointLocations)
     AddLocationBlips(Config.SalePointLocations)
+end
+
+-- admin-panel overrides (name / blip / price) and admin-created ranches pushed by the server
+RegisterNetEvent('rsg-ranch:client:applyRanchSettings', function(settings)
+    if type(settings) ~= 'table' then return end
+
+    -- drop admin-created ranches that no longer exist
+    for i = #Config.RanchLocations, 1, -1 do
+        local r = Config.RanchLocations[i]
+        if r.custom and not settings[r.ranchid] then table.remove(Config.RanchLocations, i) end
+    end
+
+    local known = {}
+    for _, r in ipairs(Config.RanchLocations) do known[r.ranchid] = r end
+
+    for ranchid, s in pairs(settings) do
+        local r = known[ranchid]
+        if s.custom and s.npc and s.spawn then
+            if not r then
+                r = { custom = true, ranchid = ranchid }
+                Config.RanchLocations[#Config.RanchLocations + 1] = r
+            end
+            r.npcmodel = s.npcmodel
+            r.jobaccess = s.jobaccess or ranchid
+            r.blipsprite = s.blipsprite or 'blip_ambient_herd'
+            r.blipscale = s.blipscale or 0.2
+            r.npccoords = vector4(s.npc.x, s.npc.y, s.npc.z, s.npc.w or 0.0)
+            r.coords = vector3(s.npc.x, s.npc.y, s.npc.z)
+            r.spawnpoint = vector4(s.spawn.x, s.spawn.y, s.spawn.z, s.spawn.w or 0.0)
+        end
+        if r then
+            r.name, r.blipname, r.price, r.showblip = s.name, s.blipname, s.price, s.showblip
+        end
+    end
+    RebuildRanchBlips()
+    TriggerEvent('rsg-ranch:client:ranchListChanged')
+end)
+
+CreateThread(function()
+    local ok, settings = pcall(lib.callback.await, 'rsg-ranch:server:getRanchSettings', false)
+    if ok and type(settings) == 'table' then
+        TriggerEvent('rsg-ranch:client:applyRanchSettings', settings)
+    else
+        RebuildRanchBlips()
+    end
 end)
 
 -- remove blips on restart so they don't stack up on the map
 AddEventHandler('onResourceStop', function(resourceName)
     if GetCurrentResourceName() ~= resourceName then return end
-    for _, blip in ipairs(createdBlips) do
-        if DoesBlipExist(blip) then
-            RemoveBlip(blip)
-        end
-    end
-    createdBlips = {}
+    ClearLocationBlips()
 end)
 
 ---------------------------------------------

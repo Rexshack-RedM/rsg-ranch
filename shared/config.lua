@@ -562,6 +562,20 @@ Config.RanchAmbientClear = {
     idleInterval   = 5000,   -- ms between distance checks when no ranch is near
 }
 
+---------------------------------
+-- ranch admin panel (/ranchadmin)
+---------------------------------
+-- Lets admin staff view and manage every ranch from one NUI: ownership,
+-- staff, livestock, troughs, coops, storages, supply orders and per-ranch
+-- settings (display name, blip, purchase price). Settings changed in the
+-- panel are saved to `rsg_ranch_settings` and override the values below.
+Config.Admin = {
+    Command = 'ranchadmin',               -- chat command that opens the panel
+    Permissions = { 'admin', 'god' },     -- rsg-core permission groups allowed to use it
+    AcePermission = 'command.ranchadmin', -- also allowed: players with this ACE
+    Log = true,                           -- print every admin action to the server console
+}
+
 Config.RanchLocations = {
     {
         name = 'Macfarlane Ranch',

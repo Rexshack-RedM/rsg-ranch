@@ -183,6 +183,28 @@ local function isPlayerRanchStaff(Player)
 end
 
 ---------------------------------------------
+-- per-grade permission (Config.StaffManagement.Permissions), enforced server-side.
+-- Previously only the client read these, so a trainee could fire the events directly.
+---------------------------------------------
+local function RanchCan(Player, permission)
+    local grade = Player.PlayerData.job.grade.level or 0
+    local perms = Config.StaffManagement.Permissions[grade]
+    if not perms then
+        -- grades above the configured table (e.g. a custom boss grade) inherit the highest defined set
+        local best
+        for g, p in pairs(Config.StaffManagement.Permissions) do
+            if g <= grade and (not best or g > best) then best = g end
+        end
+        perms = best and Config.StaffManagement.Permissions[best]
+    end
+    return perms ~= nil and perms[permission] == true
+end
+
+local function DenyPermission(src)
+    TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_no_grade_permission')})
+end
+
+---------------------------------------------
 -- Fire every member of staff at a ranch (used when a ranch is sold outright
 -- and closes for business). Handles online and offline employees, and
 -- cleans up rsg-multijob for each. Pass exceptCitizenid to skip one player
@@ -1978,6 +2000,7 @@ RegisterNetEvent('rsg-ranch:server:buyChicken', function(coopid)
         TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_92')})
         return
     end
+    if not RanchCan(Player, 'canBuy') then return DenyPermission(src) end
 
     if not coopid then return end
 
@@ -2051,6 +2074,7 @@ RegisterNetEvent('rsg-ranch:server:collectEggs', function(coopid)
         TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_100')})
         return
     end
+    if not RanchCan(Player, 'canCollectProducts') then return DenyPermission(src) end
 
     if not coopid then return end
 
@@ -2569,6 +2593,7 @@ RegisterNetEvent('rsg-ranch:server:collectProduct', function(animalid)
         TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_122')})
         return
     end
+    if not RanchCan(Player, 'canCollectProducts') then return DenyPermission(src) end
 
     if not animalid then
         if Config.Debug then
@@ -3390,6 +3415,7 @@ RegisterNetEvent('rsg-ranch:server:sellAnimal', function(animalid)
         TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_136')})
         return
     end
+    if not RanchCan(Player, 'canSell') then return DenyPermission(src) end
 
     if not animalid then
         TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_137')})
@@ -3494,6 +3520,7 @@ local function HandleSellAllAnimals(src, animalIds)
         TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_146')})
         return
     end
+    if not RanchCan(Player, 'canSell') then return DenyPermission(src) end
 
     if type(animalIds) ~= 'table' or #animalIds == 0 or #animalIds > (Config.MaxRanchAnimals or 100) then
         TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_147')})
@@ -3611,6 +3638,7 @@ RegisterNetEvent('rsg-ranch:server:buyAnimal', function(purchaseData)
             TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_154')})
             return
         end
+        if not RanchCan(Player, 'canBuy') then return DenyPermission(src) end
 
         -- Validate purchase data
         if not purchaseData or not purchaseData.animalType or not purchaseData.ranchid then
@@ -4354,6 +4382,7 @@ RegisterNetEvent('rsg-ranch:server:startBreeding', function(animal1id, animal2id
         TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_205')})
         return
     end
+    if not RanchCan(Player, 'canBreed') then return DenyPermission(src) end
 
     if not animal1id or not animal2id or animal1id == animal2id then return end
 
@@ -6000,3 +6029,18 @@ RegisterNetEvent('rsg-ranch:server:slaughterAtRanch', function(animalid)
         print(('^2[RANCH MARKET]^7 Player %s slaughtered %s %s for %sx %s'):format(src, species.key, animal.animalid, jointCount, jointItem))
     end
 end)
+
+---------------------------------------------
+-- shared handles for server/modules/admin.lua (ranch admin panel).
+-- Exposed as one global table so admin tools work on the same ownership
+-- cache and helpers as the rest of the resource.
+---------------------------------------------
+RanchAdminBridge = {
+    Owners = RanchOwners,
+    FireAllRanchStaff = FireAllRanchStaff,
+    EnsureGeneralStorage = EnsureGeneralStorage,
+    GetRanchStorages = GetRanchStorages,
+    GenerateStorageId = GenerateStorageId,
+    MultijobAddJob = MultijobAddJob,
+    MultijobRemoveJob = MultijobRemoveJob,
+}

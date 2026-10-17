@@ -3,7 +3,7 @@ rdr3_warning 'I acknowledge that this is a prerelease build of RedM, and I am aw
 game 'rdr3'
 
 description 'rsg-ranch'
-version '3.0.3'
+version '3.1.0'
 
 shared_scripts {
     '@ox_lib/init.lua',
@@ -23,6 +23,7 @@ server_scripts {
     'server/server.lua',
     'server/modules/orders.lua',
     'server/modules/wellpump.lua',
+    'server/modules/admin.lua',
     'server/versionchecker.lua',
     'server/exports.lua'
 }
@@ -43,6 +44,7 @@ files {
     'html/index.html',
     'html/style.css',
     'html/app.js',
+    'html/admin.js',
 }
 
 lua54 'yes'

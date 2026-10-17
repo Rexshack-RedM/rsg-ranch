@@ -37,7 +37,7 @@ end
 -- every locale key starting with ui_ is handed to the NUI so all of its text is translatable
 local uiLocales
 
-local function GetUiLocales()
+function GetUiLocales()
     if uiLocales then return uiLocales end
 
     local all
