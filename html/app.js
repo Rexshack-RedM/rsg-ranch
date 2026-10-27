@@ -103,7 +103,7 @@ function tabList() {
     const tabs = [{ id: 'herd', icon: '&#10022;', label: t('ui_tab_herd') }];
     if (s.grade >= 1) {
         tabs.push({ id: 'storage', icon: '&#9635;', label: t('ui_tab_storage') });
-        tabs.push({ id: 'market', icon: '&#9878;', label: t('ui_tab_market') });
+        if (s.canSell) tabs.push({ id: 'market', icon: '&#9878;', label: t('ui_tab_market') });
         if (s.catalog) tabs.push({ id: 'supplies', icon: '&#9998;', label: t('ui_tab_supplies') });
     }
     if (s.canManageStaff) tabs.push({ id: 'staff', icon: '&#9733;', label: t('ui_tab_staff') });

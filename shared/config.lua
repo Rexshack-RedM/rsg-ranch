@@ -69,7 +69,6 @@ Config.RanchStorageAccessLevels = {
     { grade = 1, label = locale('cfg_access_hands') },
     { grade = 2, label = locale('cfg_access_boss') },
 }
-Config.AnimalDistanceSpawn = 50.0
 Config.AnimalFadeIn = true
 Config.ServerNotify = true
 Config.AnimalCronJob = '*/15 * * * *' -- every 15 minutes
@@ -99,7 +98,6 @@ Config.HealthDecayRate = 1 -- health reduction per cronjob run when starving/deh
 Config.MinSurvivalStats = 0 -- minimum hunger/thirst before health starts decaying
 Config.HealthRegenerationRate = 5 -- health regeneration per cronjob run when well-fed and watered
 Config.MinStatsForRegeneration = 80 -- minimum hunger/thirst required for health regeneration
-Config.ImmediateHealthBoost = 5 -- immediate health boost when feeding/watering an unhealthy animal
 
 -- Automatic ranch feeding/watering: as long as a ranch has at least one feed/water
 -- trough with uses remaining, its animals are fed/watered passively every cronjob run
@@ -122,16 +120,6 @@ Config.WanderMoveTimeMax = 15000 -- Maximum time (ms) spent moving
 Config.WanderCheckInterval = 2000 -- How often to update wander behavior (ms)
 Config.WanderPositionSaveInterval = 30000 -- How often (ms) a freely wandering animal's position is synced back to the database, so a script/server restart resumes it near where it actually wandered to instead of snapping back to its spawn point
 
----------------------------------
--- keybinds (prop placement)
----------------------------------
-Config.Keybinds = {
-    PlaceConfirm = 'ENTER', -- confirm placement (looked up via RSGCore.Shared.Keybinds)
-    PlaceCancel = 'BACKSPACE', -- cancel placement (looked up via RSGCore.Shared.Keybinds)
-    RotateLeft = 174, -- INPUT_FRONTEND_LEFT (Left Arrow / DPad Left) - rotate prop left while placing
-    RotateRight = 175, -- INPUT_FRONTEND_RIGHT (Right Arrow / DPad Right) - rotate prop right while placing
-}
-Config.PlacementRotationStep = 5.0 -- degrees to rotate the prop per key press while placing
 
 ---------------------------------
 -- animal feed/water settings
@@ -169,7 +157,6 @@ Config.FeedTroughHungerThreshold = 10 -- animals will only seek out a feed troug
 Config.FeedTroughSearchRadius = 100.0 -- radius (from an animal's position) to search for a usable feed trough
 Config.FeedTroughInteractDistance = 2.0 -- distance an animal must reach before it can feed from a feed trough
 Config.FeedTroughPlaceDistance = 2.5 -- distance in front of the player where a feed trough is placed
-Config.FeedTroughFeedCooldown = 60000 -- ms an animal waits after feeding (or failing to find a bale) before trying again
 Config.FeedTroughHeadingOffset = 0.0 -- degrees added to the stored heading when (re)spawning the prop, to correct for the model's default pivot facing
 Config.FeedBagItem = 'feedbag' -- item used to refill a feed trough (consumed like the water bucket is for water troughs, minus the fill-up step)
 Config.FeedTroughRefillPerBagUse = 100 -- uses added to a feed trough per feedbag consumed when refilling
@@ -187,7 +174,6 @@ Config.WaterTroughThirstThreshold = 10 -- animals will only seek out a water tro
 Config.WaterTroughSearchRadius = 100.0 -- radius (from an animal's position) to search for a usable water trough
 Config.WaterTroughInteractDistance = 2.0 -- distance an animal must reach before it can drink from a water trough
 Config.WaterTroughPlaceDistance = 2.5 -- distance in front of the player where a water trough is placed
-Config.WaterTroughDrinkCooldown = 60000 -- ms an animal waits after drinking (or failing to find a trough) before trying again
 Config.WaterTroughRefillPerBucketUse = 100 -- uses added to a trough per water bucket use consumed when refilling
 Config.WaterTroughHeadingOffset = 0.0 -- degrees added to the stored heading when (re)spawning the prop, to correct for the model's default pivot facing
 Config.WATERTROUGH_ID_MIN = 100000
@@ -242,18 +228,14 @@ Config.SelectionRangeMultiplier = 1.5 -- multiplier for selection range vs herdi
 -- animal buy/sell settings
 ---------------------------------
 Config.BullBuyPrice = 100
-Config.BullSellPrice = 1
 ---------------------------------
 Config.CowBuyPrice = 50
-Config.CowSellPrice = 1
 ---------------------------------
 Config.PigBuyPrice = 40
-Config.PigSellPrice = 1
 Config.PigDeliveryOnly = true -- pigs can only be bought with delivery to the ranch, no drive-yourself pickup option
 Config.PigChooseGenderOnBuy = true -- let the buyer pick male/female when purchasing a pig, instead of it being randomized
 ---------------------------------
 Config.SheepBuyPrice = 35
-Config.SheepSellPrice = 1
 Config.SheepDeliveryOnly = true -- sheep follow the same buy rules as pigs: delivery to the ranch only, no drive-yourself pickup option
 Config.SheepChooseGenderOnBuy = true -- let the buyer pick male/female when purchasing a sheep, instead of it being randomized
 ---------------------------------
@@ -349,14 +331,12 @@ Config.AnimalInteractionDistance = 6.0 -- Max distance a player can be from an a
 ---------------------------------
 -- Buy point settings
 ---------------------------------
-Config.BuyPointSpawnDistance = 8.0 -- Distance from buy point where animals can spawn
 Config.BuyPointInteractionDistance = 20.0 -- Max distance a player can be from a buy point NPC and still buy
 
 ---------------------------------
 -- animal production settings
 ---------------------------------
 Config.ProductionEnabled = true
-Config.ProductionCheckInterval = 3600 -- seconds (1 hour)
 Config.MinAgeForProduction = 5 -- days old before animals can produce (set to 0 for testing)
 
 ---------------------------------
@@ -511,6 +491,7 @@ Config.StaffManagement = {
             canSell = false,
             canBuy = false,
             canManageStaff = false,
+            canManageProps = false, -- move / delete placed troughs & chicken coops
         },
         [1] = { -- Ranch Hand
             canCollectProducts = true,
@@ -518,6 +499,7 @@ Config.StaffManagement = {
             canSell = false,
             canBuy = false,
             canManageStaff = false,
+            canManageProps = true, -- move / delete placed troughs & chicken coops
         },
         [2] = { -- Manager/Boss (ranch jobs only define grades 0-2, see installation/shared_jobs.lua)
             canCollectProducts = true,
@@ -525,6 +507,7 @@ Config.StaffManagement = {
             canSell = true,
             canBuy = true,
             canManageStaff = true,
+            canManageProps = true, -- move / delete placed troughs & chicken coops
         },
     }
 }

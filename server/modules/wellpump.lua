@@ -39,10 +39,6 @@ local function hasItem(Player, item)
     return it ~= nil and (it.amount or 0) > 0
 end
 
-local function itemBox(src, item, mode, amount)
-    TriggerClientEvent('rsg-inventory:client:ItemBox', src, RSGCore.Shared.Items[item], mode, amount)
-end
-
 local function canAdd(src, item, amount)
     if not RSGCore.Shared.Items[item] then return false end
     local ok, res = pcall(function() return exports['rsg-inventory']:CanAddItem(src, item, amount or 1) end)
@@ -51,17 +47,13 @@ end
 
 local function removeItem(src, item, amount, slot, reason)
     amount = amount or 1
-    if not exports['rsg-inventory']:RemoveItem(src, item, amount, slot, reason) then return false end
-    itemBox(src, item, 'remove', amount)
-    return true
+    return exports['rsg-inventory']:RemoveItem(src, item, amount, slot, reason) == true
 end
 
 local function addItem(src, item, amount, info, reason)
     amount = amount or 1
     if amount <= 0 or not canAdd(src, item, amount) then return false end
-    if not exports['rsg-inventory']:AddItem(src, item, amount, nil, info, reason) then return false end
-    itemBox(src, item, 'add', amount)
-    return true
+    return exports['rsg-inventory']:AddItem(src, item, amount, info, nil, reason) == true
 end
 
 -- action tokens: the server starts a timer at the pre-check and only accepts the

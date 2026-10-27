@@ -78,6 +78,7 @@ local function BuildRanchPayload(ranchid)
         isOwner = owner == PlayerData.citizenid,
         isBoss = isBoss,
         canManageStaff = canManageStaff,
+        canSell = (Config.StaffManagement.Permissions[grade] or {}).canSell == true,
         isTrainee = grade == 0,
         herdingEnabled = Config.HerdingEnabled == true,
         cash = PlayerData.money.cash or 0,

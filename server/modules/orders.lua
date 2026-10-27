@@ -256,9 +256,6 @@ RegisterNetEvent('rsg-ranch:server:collectSupplyOrder', function(orderid)
         return
     end
 
-    if RSGCore.Shared.Items[order.item] then
-        TriggerClientEvent('rsg-inventory:client:ItemBox', src, RSGCore.Shared.Items[order.item], 'add', order.amount)
-    end
 
     TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('sv_orders_description_13'):format(order.amount, RSGCore.Shared.Items[order.item] and RSGCore.Shared.Items[order.item].label or order.item)})
 

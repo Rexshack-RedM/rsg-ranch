@@ -18,7 +18,7 @@ A complete livestock ranching system for **RedM** servers running the **RSG Fram
 A full NUI dashboard opened at the ranch NPC, with tabs for:
 - **Herd:** every animal with its health, hunger, thirst, age, breeding and product status. You can filter it (pregnant, ready to breed, needs care…).
 - **Storage:** a free general storage plus extra storages you can buy (small, medium, large). The boss can rename them and restrict who can open each one.
-- **Market:** sell pigs, cows and sheep for cash, or slaughter them for joints of meat, right at the ranch.
+- **Market:** sell pigs, cows, bulls and sheep for cash, or slaughter them for joints of meat, right at the ranch (grades with `canSell` only).
 - **Supplies:** order troughs, coops, feed bags, buckets and well pumps. They're ready to collect after a delivery time.
 - **Staff:** hire nearby players (they must accept), and promote, demote or fire them. Offline staff are included.
 - **Ranch:** transfer or sell the ranch.
@@ -97,9 +97,9 @@ A full NUI dashboard opened at the ranch NPC, with tabs for:
 
    | Grade | Name | Can do |
    |---|---|---|
-   | 0 | Trainee Rancher | Care for animals, view the herd |
-   | 1 | Ranch Hand | Plus storage, market, supplies, herding, breeding and collecting produce |
-   | 2 | Ranch Manager (boss) | Plus buying and selling livestock, staff management and the ranch tab |
+   | 0 | Trainee Rancher | Care for animals, view the herd, place and refill troughs |
+   | 1 | Ranch Hand | Plus storage, supplies, herding, breeding, collecting produce, and moving or removing troughs and coops |
+   | 2 | Ranch Manager (boss) | Plus buying and selling livestock (including the Market tab), staff management and the ranch tab |
 
    What each grade may do is set in `Config.StaffManagement.Permissions` and enforced on the server.
 
@@ -131,7 +131,7 @@ Everything is in `shared/config.lua`, and each option has a comment explaining i
 | **Breeding** | `Config.BreedingEnabled`, `Config.BreedingConfig`, `Config.GenderSpecificCooldowns`, `Config.MinAgeForBreeding`, health/hunger/thirst requirements, automatic breeding options |
 | **Produce** | `Config.AnimalProducts` (item, amount, production time and requirements per animal) |
 | **Herding** | `Config.HerdingEnabled`, `Config.HerdingDistance`, `Config.HerdingMaxAnimals`, `Config.HerdingTimeout`, `Config.RequireHerdingTool` |
-| **Staff** | `Config.StaffManagement` (min grade to manage, max employees, per-grade `Permissions`: `canSell`, `canBuy`, `canBreed`, `canCollectProducts`) |
+| **Staff** | `Config.StaffManagement` (min grade to manage, max employees, per-grade `Permissions`: `canSell`, `canBuy`, `canBreed`, `canCollectProducts`, `canManageStaff`, `canManageProps`) |
 | **Admin panel** | `Config.Admin` (command, permission groups, ACE, console logging) |
 | **Supplies** | `Config.OrderSupplies` (catalogue, prices, delivery times, limits) |
 | **Wandering and blips** | `Config.AnimalWanderingEnabled`, `Config.WanderRadius`, `Config.AnimalBlipsEnabled` |
@@ -209,6 +209,18 @@ Panel-created ranches are marked ★. Their Ownership tab adds **Set NPC here**,
 > rsg-multijob only reads job definitions when it starts, so a new ranch's job appears in players' multijob lists after `ensure rsg-multijob` or the next server restart. Assigning the job works immediately.
 
 Every admin action is re-checked on the server and printed to the server console when `Config.Admin.Log = true`.
+
+---
+
+## Changelog
+
+### 3.1.1
+- **Security:** the ranch Market (sell / slaughter) now checks the `canSell` permission on the server. Ranch Hands could previously sell or slaughter the owner's livestock for their own cash; the Market tab is now hidden for grades without `canSell`.
+- **Security:** animal spawn requests take the model and position from the database. A client could previously register a fake animal with any model and coordinates and have it broadcast to nearby players.
+- **Security:** placed-prop coordinates are validated as real, finite numbers; buying two different ranches at once is locked per player.
+- **Permissions:** new `canManageProps` permission (Ranch Hand and up by default) for moving and removing troughs and chicken coops, so trainees can't wipe a ranch's props.
+- **UX:** item pick-up / use pop-ups no longer show twice (rsg-inventory already shows them on `AddItem` / `RemoveItem`).
+- **Clean-up:** `AddItem` calls use the current `info`-before-`slot` order; removed unused config options (`Config.Keybinds`, `PlacementRotationStep`, `AnimalDistanceSpawn`, `BuyPointSpawnDistance`, `FeedTroughFeedCooldown`, `WaterTroughDrinkCooldown`, `ImmediateHealthBoost`, `ProductionCheckInterval` and the placeholder `Bull/Cow/Pig/SheepSellPrice`; sale prices come from `Config.BaseSellPrices`).
 
 ---
 
