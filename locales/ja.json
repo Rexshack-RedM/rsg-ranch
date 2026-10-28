@@ -989,5 +989,9 @@
     "sv_adm_ranch_created": "%s created - its NPC is where you are standing",
     "sv_adm_ranch_deleted": "Ranch deleted",
     "cl_adm_command_help": "Open the ranch administration panel",
-    "sv_no_grade_permission": "Your job grade at this ranch is not allowed to do that"
+    "sv_no_grade_permission": "Your job grade at this ranch is not allowed to do that",
+    "ui_respawn": "再出現",
+    "ui_respawn_hint": "この動物がワールドから消えた場合、最後に保存された位置に再出現させます。",
+    "sv_respawn_done": "動物を再出現させました。近くにいればすぐに現れます。",
+    "sv_respawn_cooldown": "再度行う前に数秒お待ちください。"
 }

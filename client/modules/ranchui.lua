@@ -209,6 +209,7 @@ end)
 -- simple fire-and-forget actions: action name -> server event + argument builder
 local Actions = {
     sellAnimal     = function(d) TriggerServerEvent('rsg-ranch:server:sellAtRanch', d.animalid) end,
+    respawnAnimal  = function(d) TriggerServerEvent('rsg-ranch:server:respawnAnimal', d.animalid) end,
     slaughter      = function(d) TriggerServerEvent('rsg-ranch:server:slaughterAtRanch', d.animalid) end,
     orderSupply    = function(d) TriggerServerEvent('rsg-ranch:server:placeSupplyOrder', d.item, tonumber(d.amount) or 1) end,
     collectOrder   = function(d) TriggerServerEvent('rsg-ranch:server:collectSupplyOrder', d.orderid) end,

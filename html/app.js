@@ -204,8 +204,10 @@ function showAnimal(id) {
             <div><div class="k">${esc(t('ui_product'))}</div>${esc(a.product_ready ? t('ui_ready') : t('ui_not_ready'))}</div>
         </div>
         <div class="stats single">${bar(t('ui_health'), a.health)}${bar(t('ui_hunger'), a.hunger)}${bar(t('ui_thirst'), a.thirst)}</div>
-        <p class="spaced">${esc(t('ui_animal_hint'))}</p>`,
-        [{ label: t('ui_close'), muted: true }]);
+        <p class="spaced">${esc(t('ui_animal_hint'))}</p>
+        <p class="spaced">${esc(t('ui_respawn_hint'))}</p>`,
+        [{ label: t('ui_respawn'), onClick: () => action('respawnAnimal', { animalid: a.animalid }) },
+         { label: t('ui_close'), muted: true }]);
 }
 
 // ---------- storage ----------

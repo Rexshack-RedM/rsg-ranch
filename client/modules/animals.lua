@@ -150,6 +150,17 @@ function SpawnManager:CheckSpawnRequests()
     for _, animalData in ipairs(animalDataCache) do
         if self:IsValidAnimalData(animalData) then
             local animalId = tostring(animalData.animalid)
+
+            -- The entity can disappear without going through DespawnAnimal (network
+            -- culling/ownership change). The stale entry used to block respawning
+            -- forever, leaving the animal in the menu but not in the world.
+            local tracked = self.entities[animalId]
+            if tracked and not DoesEntityExist(tracked.entity) then
+                if Config.Debug then
+                    print('^3[SPAWN MANAGER]^7 Entity for animal ' .. animalId .. ' vanished, clearing for respawn')
+                end
+                self:DespawnAnimal(animalId)
+            end
             local animalPos = vector3(animalData.pos_x, animalData.pos_y, animalData.pos_z)
             local distance = #(playerCoords - animalPos)
             
@@ -792,6 +803,18 @@ function SpawnManager:DespawnAnimal(animalId)
         print('^1[SPAWN MANAGER]^7 Despawned animal ' .. animalId)
     end
 end
+
+-- Server told us an animal was force-respawned from the ranch menu: drop our local
+-- reference so the spawn loop recreates it on the next check
+RegisterNetEvent('rsg-ranch:client:forceRespawnAnimal', function(animalId)
+    animalId = tostring(animalId)
+    SpawnManager.pending[animalId] = nil
+    transportingAnimals[animalId] = nil
+    followStates[animalId] = nil
+    if SpawnManager.entities[animalId] then
+        SpawnManager:DespawnAnimal(animalId)
+    end
+end)
 
 -- Periodically re-checks every spawned animal's blip against the local player's current
 -- job, so blips appear/disappear on hire/fire or job switch without needing the animal

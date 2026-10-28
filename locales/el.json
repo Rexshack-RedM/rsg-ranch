@@ -989,5 +989,9 @@
     "sv_adm_ranch_created": "%s created - its NPC is where you are standing",
     "sv_adm_ranch_deleted": "Ranch deleted",
     "cl_adm_command_help": "Open the ranch administration panel",
-    "sv_no_grade_permission": "Your job grade at this ranch is not allowed to do that"
+    "sv_no_grade_permission": "Your job grade at this ranch is not allowed to do that",
+    "ui_respawn": "Επανεμφάνιση",
+    "ui_respawn_hint": "Αν το ζώο έχει χαθεί από τον κόσμο, επανεμφάνισέ το στην τελευταία αποθηκευμένη θέση του.",
+    "sv_respawn_done": "Το ζώο επανεμφανίστηκε - θα εμφανιστεί σύντομα αν είσαι κοντά.",
+    "sv_respawn_cooldown": "Περίμενε λίγα δευτερόλεπτα πριν το ξαναδοκιμάσεις."
 }

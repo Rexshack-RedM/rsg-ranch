@@ -2318,8 +2318,24 @@ RegisterNetEvent('rsg-ranch:server:requestAnimalSpawn', function(animalId, anima
         return
     end
 
-    -- Check if this animal already has a network ID (spawned by another player)
+    -- Check if this animal already has a network ID (spawned by another player).
+    -- The entity behind a tracked network id can vanish without any client reporting
+    -- it (culled after its owner left, removed by another resource, etc). Handing that
+    -- dead id out made every client wait on an entity that never syncs, so the animal
+    -- stayed invisible until a restart. Verify it still exists server-side first.
     local existingNetworkId = SpawnController.activeSpawns[animalId] and SpawnController.activeSpawns[animalId].networkId
+    if existingNetworkId then
+        local ent = NetworkGetEntityFromNetworkId(existingNetworkId)
+        if not ent or ent == 0 or not DoesEntityExist(ent) then
+            if Config.Debug then
+                print('^3[SPAWN CONTROLLER]^7 Stale network id ' .. existingNetworkId .. ' for animal ' .. animalId .. ', recreating')
+            end
+            SpawnController.activeSpawns[animalId].networkId = nil
+            SpawnController.activeSpawns[animalId].creator = nil
+            SpawnController.activeSpawns[animalId].creatorAt = nil
+            existingNetworkId = nil
+        end
+    end
     
     -- Register the spawn
     SpawnController:RegisterSpawn(src, animalId, trustedData, existingNetworkId)
@@ -2539,6 +2555,43 @@ AddEventHandler('onResourceStart', function(resourceName)
 end)
 
 ---------------------------------------------
+-- Ranch staff can force-respawn an animal from the ranch menu (recovers animals
+-- whose entity vanished but are still in the database)
+---------------------------------------------
+local respawnCooldown = {}
+RegisterNetEvent('rsg-ranch:server:respawnAnimal', function(animalId)
+    local src = source
+    local Player = RSGCore.Functions.GetPlayer(src)
+    if not Player or not animalId or not isPlayerRanchStaff(Player) then return end
+    animalId = tostring(animalId)
+
+    local now = os.time()
+    if respawnCooldown[src] and now - respawnCooldown[src] < 10 then
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_respawn_cooldown')})
+        return
+    end
+    respawnCooldown[src] = now
+
+    local row = MySQL.single.await('SELECT ranchid FROM rsg_ranch_animals WHERE animalid = ?', {animalId})
+    if not row or row.ranchid ~= Player.PlayerData.job.name then
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_123')})
+        return
+    end
+
+    local tracked = SpawnController.activeSpawns[animalId]
+    if tracked and tracked.networkId then
+        local ent = NetworkGetEntityFromNetworkId(tracked.networkId)
+        if ent and ent ~= 0 and DoesEntityExist(ent) then DeleteEntity(ent) end
+    end
+    SpawnController.activeSpawns[animalId] = nil
+
+    TriggerClientEvent('rsg-ranch:client:forceRespawnAnimal', -1, animalId)
+    TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('sv_respawn_done')})
+end)
+
+AddEventHandler('playerDropped', function() respawnCooldown[source] = nil end)
+
+---------------------------------------------
 -- Handle client reporting animal despawn
 ---------------------------------------------
 RegisterNetEvent('rsg-ranch:server:reportDespawn', function(animalId)
@@ -2704,18 +2757,28 @@ RegisterNetEvent('rsg-ranch:server:sendAnimalToFeed', function(animalid, feedtro
         return
     end
 
-    local animalVec = vector3(animal.pos_x, animal.pos_y, animal.pos_z)
-    if #(playerCoords - animalVec) > Config.AnimalInteractionDistance then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_304')})
-        return
-    end
 
-    local troughRows = MySQL.query.await('SELECT feedtroughid, ranchid, uses FROM rsg_ranch_feedtroughs WHERE feedtroughid = ?', {feedtroughid})
+    local troughRows = MySQL.query.await('SELECT feedtroughid, ranchid, uses, pos_x, pos_y, pos_z FROM rsg_ranch_feedtroughs WHERE feedtroughid = ?', {feedtroughid})
     if not troughRows or #troughRows == 0 or troughRows[1].ranchid ~= animal.ranchid then
         TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_305')})
         return
     end
     local trough = troughRows[1]
+
+    -- This only fires after the animal has walked (up to the trough search radius) to
+    -- the trough, so the player is usually no longer beside it, and the animal's DB
+    -- position can be stale from wandering. Checking against that position caused
+    -- false "too far" errors that cancelled the feed/drink. Instead require the
+    -- player to be beside the animal's last saved spot OR within reach of the trough.
+    local animalVec = vector3(animal.pos_x, animal.pos_y, animal.pos_z)
+    local troughVec = vector3(trough.pos_x or 0.0, trough.pos_y or 0.0, trough.pos_z or 0.0)
+    local searchRadius = Config.FeedTroughSearchRadius or 100.0
+    local nearAnimal = #(playerCoords - animalVec) <= Config.AnimalInteractionDistance
+    local nearTrough = #(playerCoords - troughVec) <= (searchRadius + Config.AnimalInteractionDistance)
+    if not nearAnimal and not nearTrough then
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_304')})
+        return
+    end
 
     if (trough.uses or 0) <= 0 then
         TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_306')})
@@ -2776,18 +2839,28 @@ RegisterNetEvent('rsg-ranch:server:sendAnimalToWater', function(animalid, watert
         return
     end
 
-    local animalVec = vector3(animal.pos_x, animal.pos_y, animal.pos_z)
-    if #(playerCoords - animalVec) > Config.AnimalInteractionDistance then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_304')})
-        return
-    end
 
-    local troughRows = MySQL.query.await('SELECT watertroughid, ranchid, uses FROM rsg_ranch_watertroughs WHERE watertroughid = ?', {watertroughid})
+    local troughRows = MySQL.query.await('SELECT watertroughid, ranchid, uses, pos_x, pos_y, pos_z FROM rsg_ranch_watertroughs WHERE watertroughid = ?', {watertroughid})
     if not troughRows or #troughRows == 0 or troughRows[1].ranchid ~= animal.ranchid then
         TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_308')})
         return
     end
     local trough = troughRows[1]
+
+    -- This only fires after the animal has walked (up to the trough search radius) to
+    -- the trough, so the player is usually no longer beside it, and the animal's DB
+    -- position can be stale from wandering. Checking against that position caused
+    -- false "too far" errors that cancelled the feed/drink. Instead require the
+    -- player to be beside the animal's last saved spot OR within reach of the trough.
+    local animalVec = vector3(animal.pos_x, animal.pos_y, animal.pos_z)
+    local troughVec = vector3(trough.pos_x or 0.0, trough.pos_y or 0.0, trough.pos_z or 0.0)
+    local searchRadius = Config.WaterTroughSearchRadius or 100.0
+    local nearAnimal = #(playerCoords - animalVec) <= Config.AnimalInteractionDistance
+    local nearTrough = #(playerCoords - troughVec) <= (searchRadius + Config.AnimalInteractionDistance)
+    if not nearAnimal and not nearTrough then
+        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_304')})
+        return
+    end
 
     if (trough.uses or 0) <= 0 then
         TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_309')})
