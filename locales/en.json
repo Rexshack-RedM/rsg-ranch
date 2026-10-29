@@ -993,5 +993,10 @@
     "ui_respawn": "Respawn",
     "ui_respawn_hint": "If this animal has gone missing from the world, respawn it at its last saved position.",
     "sv_respawn_done": "Animal respawned - it will reappear shortly if you are nearby.",
-    "sv_respawn_cooldown": "Please wait a few seconds before respawning again."
+    "sv_respawn_cooldown": "Please wait a few seconds before respawning again.",
+    "ui_adm_return_spawn": "Return to Spawn",
+    "ui_adm_return_all": "Return All to Spawn",
+    "ui_adm_confirm_return_all": "Send all %s animals at %s back to the ranch's animal spawn point?",
+    "sv_adm_returned": "Animal(s) returned to the ranch spawn point",
+    "sv_adm_no_spawn": "This ranch has no animal spawn point set"
 }

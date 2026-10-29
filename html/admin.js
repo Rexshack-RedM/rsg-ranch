@@ -310,7 +310,8 @@ function admViewAnimals() {
         </div>`).join('');
     return `<div class="section-title"><span>${esc(t('ui_animals'))} (${d.animals.length}/${d.maxAnimals})</span>
             <span class="adm-inline">
-                ${d.animals.length ? `<button class="wood-btn small" data-act="healAll">${esc(t('ui_adm_heal_all'))}</button>
+                ${d.animals.length ? `<button class="wood-btn small" data-act="returnAllAnimals">${esc(t('ui_adm_return_all'))}</button>
+                <button class="wood-btn small" data-act="healAll">${esc(t('ui_adm_heal_all'))}</button>
                 <button class="wood-btn small danger" data-act="deleteAllAnimals">${esc(t('ui_adm_delete_all'))}</button>` : ''}
             </span></div>
         <div class="filters">${filters.map(([k, l]) => `<div class="chip ${adm.animalFilter === k ? 'active' : ''}" data-afilter="${esc(k)}">${esc(l)}</div>`).join('')}</div>
@@ -333,6 +334,7 @@ function admEditAnimal(id) {
         </div>`, [
         { label: t('ui_cancel'), muted: true },
         { label: t('ui_adm_teleport'), muted: true, onClick: () => { admPost('admin:teleport', { x: a.pos_x, y: a.pos_y, z: a.pos_z }); } },
+        { label: t('ui_adm_return_spawn'), muted: true, onClick: () => { admAction('returnAnimal', { animalid: a.animalid }); } },
         { label: t('ui_adm_delete'), danger: true, onClick: () => { admConfirm(t('ui_adm_delete'), t('ui_adm_confirm_delete_animal', a.animalid), t('ui_adm_delete'), () => admAction('deleteAnimal', { animalid: a.animalid })); } },
         { label: t('ui_adm_save'), onClick: () => { admAction('updateAnimal', {
             animalid: a.animalid, health: $('aa-health').value, hunger: $('aa-hunger').value, thirst: $('aa-thirst').value,
@@ -475,6 +477,8 @@ function admBind() {
                 admAction('hire', { target: v, grade: $('adm-hire-grade').value });
             } else if (a === 'fireAll') {
                 admConfirm(t('ui_adm_fire_all'), t('ui_adm_confirm_fire_all', r.name), t('ui_adm_fire_all'), () => admAction('fireAll'));
+            } else if (a === 'returnAllAnimals') {
+                admConfirm(t('ui_adm_return_all'), t('ui_adm_confirm_return_all', d.animals.length, r.name), t('ui_adm_return_all'), () => admAction('returnAllAnimals'));
             } else if (a === 'healAll') {
                 admAction('healAll');
             } else if (a === 'deleteAllAnimals') {

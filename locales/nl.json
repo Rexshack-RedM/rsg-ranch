@@ -993,5 +993,10 @@
     "ui_respawn": "Respawnen",
     "ui_respawn_hint": "Als dit dier uit de wereld is verdwenen, laat het dan op zijn laatst opgeslagen positie opnieuw verschijnen.",
     "sv_respawn_done": "Dier gerespawned - het verschijnt zo als je in de buurt bent.",
-    "sv_respawn_cooldown": "Wacht een paar seconden voordat je het opnieuw probeert."
+    "sv_respawn_cooldown": "Wacht een paar seconden voordat je het opnieuw probeert.",
+    "ui_adm_return_spawn": "Terug naar spawnpunt",
+    "ui_adm_return_all": "Alles terug naar spawnpunt",
+    "ui_adm_confirm_return_all": "Alle %s dieren op %s terugsturen naar het dieren-spawnpunt van de ranch?",
+    "sv_adm_returned": "Dier(en) teruggestuurd naar het spawnpunt van de ranch",
+    "sv_adm_no_spawn": "Deze ranch heeft geen dieren-spawnpunt ingesteld"
 }

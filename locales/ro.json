@@ -993,5 +993,10 @@
     "ui_respawn": "Respawn",
     "ui_respawn_hint": "Dacă animalul a dispărut din lume, readu-l la ultima poziție salvată.",
     "sv_respawn_done": "Animal readus - va apărea în curând dacă ești în apropiere.",
-    "sv_respawn_cooldown": "Așteaptă câteva secunde înainte de a încerca din nou."
+    "sv_respawn_cooldown": "Așteaptă câteva secunde înainte de a încerca din nou.",
+    "ui_adm_return_spawn": "Întoarce la punctul de spawn",
+    "ui_adm_return_all": "Toate la punctul de spawn",
+    "ui_adm_confirm_return_all": "Trimiți toate cele %s animale de la %s înapoi la punctul de spawn al fermei?",
+    "sv_adm_returned": "Animal(e) întoarse la punctul de spawn al fermei",
+    "sv_adm_no_spawn": "Această fermă nu are un punct de spawn pentru animale"
 }

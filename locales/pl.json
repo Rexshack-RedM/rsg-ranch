@@ -993,5 +993,10 @@
     "ui_respawn": "Odrodź",
     "ui_respawn_hint": "Jeśli to zwierzę zniknęło ze świata, odródź je w ostatniej zapisanej pozycji.",
     "sv_respawn_done": "Zwierzę odrodzone - pojawi się wkrótce, jeśli jesteś w pobliżu.",
-    "sv_respawn_cooldown": "Poczekaj kilka sekund przed ponowną próbą."
+    "sv_respawn_cooldown": "Poczekaj kilka sekund przed ponowną próbą.",
+    "ui_adm_return_spawn": "Wróć do punktu odrodzenia",
+    "ui_adm_return_all": "Wszystkie do punktu odrodzenia",
+    "ui_adm_confirm_return_all": "Odesłać wszystkie %s zwierząt z %s do punktu odrodzenia zwierząt rancza?",
+    "sv_adm_returned": "Zwierzęta wróciły do punktu odrodzenia rancza",
+    "sv_adm_no_spawn": "To ranczo nie ma ustawionego punktu odrodzenia zwierząt"
 }

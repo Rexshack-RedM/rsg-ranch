@@ -470,6 +470,52 @@ Actions.deleteAnimal = function(src, ranchid, d)
     return true, 'sv_adm_deleted'
 end
 
+-- Return animals to their ranch's animal spawn point (the original delivery spot).
+-- Entities are removed first, then the DB position is reset and clients respawn them there.
+local function ReturnAnimalsToSpawn(ranchid, ids)
+    local r = GetRanch(ranchid)
+    local sp = r and r.spawnpoint
+    if not sp then return false, 'sv_adm_no_spawn' end
+    for _, id in ipairs(ids) do
+        B().ClearAnimalSpawn(id)
+        TriggerClientEvent('rsg-ranch:client:forceRespawnAnimal', -1, id)
+    end
+    Wait(500) -- let clients despawn (and any last position save land) before we overwrite the position
+    local scatter = #ids > 1 and 3.0 or 0.0
+    for _, id in ipairs(ids) do
+        local ox, oy = 0.0, 0.0
+        if scatter > 0 then
+            local a, d = math.random() * 2 * math.pi, math.random() * scatter
+            ox, oy = math.cos(a) * d, math.sin(a) * d
+        end
+        MySQL.update.await('UPDATE rsg_ranch_animals SET pos_x = ?, pos_y = ?, pos_z = ?, pos_w = ? WHERE animalid = ? AND ranchid = ?',
+            { sp.x + ox, sp.y + oy, sp.z, sp.w or 0.0, id, ranchid })
+    end
+    RanchBroadcastAnimals(-1)
+    return true
+end
+
+Actions.returnAnimal = function(src, ranchid, d)
+    local id = tostring(d.animalid or '')
+    local row = MySQL.single.await('SELECT animalid FROM rsg_ranch_animals WHERE animalid = ? AND ranchid = ?', { id, ranchid })
+    if not row then return false, 'sv_adm_not_found' end
+    local ok, err = ReturnAnimalsToSpawn(ranchid, { id })
+    if not ok then return false, err end
+    Log(src, ranchid, 'returned animal ' .. id .. ' to spawn point')
+    return true, 'sv_adm_returned'
+end
+
+Actions.returnAllAnimals = function(src, ranchid)
+    local rows = MySQL.query.await('SELECT animalid FROM rsg_ranch_animals WHERE ranchid = ?', { ranchid }) or {}
+    if #rows == 0 then return false, 'sv_adm_not_found' end
+    local ids = {}
+    for _, r in ipairs(rows) do ids[#ids + 1] = tostring(r.animalid) end
+    local ok, err = ReturnAnimalsToSpawn(ranchid, ids)
+    if not ok then return false, err end
+    Log(src, ranchid, ('returned all %d animals to spawn point'):format(#ids))
+    return true, 'sv_adm_returned'
+end
+
 Actions.deleteAllAnimals = function(src, ranchid)
     local rows = MySQL.query.await('SELECT animalid FROM rsg_ranch_animals WHERE ranchid = ?', { ranchid }) or {}
     MySQL.query.await('DELETE FROM rsg_ranch_animals WHERE ranchid = ?', { ranchid })

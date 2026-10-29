@@ -993,5 +993,10 @@
     "ui_respawn": "Reaparecer",
     "ui_respawn_hint": "Se este animal sumiu do mundo, faça-o reaparecer na última posição salva.",
     "sv_respawn_done": "Animal reaparecido - ele aparecerá em breve se você estiver por perto.",
-    "sv_respawn_cooldown": "Aguarde alguns segundos antes de tentar novamente."
+    "sv_respawn_cooldown": "Aguarde alguns segundos antes de tentar novamente.",
+    "ui_adm_return_spawn": "Voltar ao ponto de spawn",
+    "ui_adm_return_all": "Todos ao ponto de spawn",
+    "ui_adm_confirm_return_all": "Enviar todos os %s animais de %s de volta ao ponto de spawn de animais do rancho?",
+    "sv_adm_returned": "Animal(is) devolvido(s) ao ponto de spawn do rancho",
+    "sv_adm_no_spawn": "Este rancho não tem ponto de spawn de animais definido"
 }

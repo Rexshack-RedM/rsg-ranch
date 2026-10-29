@@ -993,5 +993,10 @@
     "ui_respawn": "再出現",
     "ui_respawn_hint": "この動物がワールドから消えた場合、最後に保存された位置に再出現させます。",
     "sv_respawn_done": "動物を再出現させました。近くにいればすぐに現れます。",
-    "sv_respawn_cooldown": "再度行う前に数秒お待ちください。"
+    "sv_respawn_cooldown": "再度行う前に数秒お待ちください。",
+    "ui_adm_return_spawn": "スポーン地点に戻す",
+    "ui_adm_return_all": "全てスポーン地点に戻す",
+    "ui_adm_confirm_return_all": "%s 頭の動物（%s）を牧場の動物スポーン地点に戻しますか？",
+    "sv_adm_returned": "動物を牧場のスポーン地点に戻しました",
+    "sv_adm_no_spawn": "この牧場には動物のスポーン地点が設定されていません"
 }

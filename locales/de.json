@@ -993,5 +993,10 @@
     "ui_respawn": "Neu spawnen",
     "ui_respawn_hint": "Wenn das Tier aus der Welt verschwunden ist, lass es an seiner letzten Position neu erscheinen.",
     "sv_respawn_done": "Tier neu gespawnt - es erscheint gleich, wenn du in der Nähe bist.",
-    "sv_respawn_cooldown": "Bitte warte ein paar Sekunden, bevor du erneut spawnst."
+    "sv_respawn_cooldown": "Bitte warte ein paar Sekunden, bevor du erneut spawnst.",
+    "ui_adm_return_spawn": "Zum Spawnpunkt",
+    "ui_adm_return_all": "Alle zum Spawnpunkt",
+    "ui_adm_confirm_return_all": "Alle %s Tiere auf %s zum Tier-Spawnpunkt der Ranch zurückschicken?",
+    "sv_adm_returned": "Tier(e) zum Spawnpunkt der Ranch zurückgebracht",
+    "sv_adm_no_spawn": "Diese Ranch hat keinen Tier-Spawnpunkt"
 }

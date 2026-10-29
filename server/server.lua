@@ -6121,4 +6121,13 @@ RanchAdminBridge = {
     GenerateStorageId = GenerateStorageId,
     MultijobAddJob = MultijobAddJob,
     MultijobRemoveJob = MultijobRemoveJob,
+    -- removes the networked entity + server tracking so clients recreate the animal from the DB
+    ClearAnimalSpawn = function(animalId)
+        local tracked = SpawnController.activeSpawns[animalId]
+        if tracked and tracked.networkId then
+            local ent = NetworkGetEntityFromNetworkId(tracked.networkId)
+            if ent and ent ~= 0 and DoesEntityExist(ent) then DeleteEntity(ent) end
+        end
+        SpawnController.activeSpawns[animalId] = nil
+    end,
 }
