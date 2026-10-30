@@ -724,7 +724,7 @@
     "ui_guide_selling_title": "Verkaufen",
     "ui_guide_selling": "Treibe Rinder zu einem Verkaufspunkt, um sie zu verkaufen, oder verkaufe Schweine, Kühe und Schafe im Markt-Tab. Tiere im besten Alter bringen am meisten.",
     "cl_wellpump_title": "Brunnenpumpe",
-    "cl_wellpump_place_help": "[LMT] Platzieren   [Q / E] Drehen   [Hoch / Runter] Höhe   [RMT] Abbrechen",
+    "cl_wellpump_place_help": "[ENTER] Platzieren   [Links / Rechts] Drehen   [Hoch / Runter] Höhe   [RMT / Rücktaste] Abbrechen",
     "cl_wellpump_too_far": "Zu weit weg",
     "cl_wellpump_cancelled": "Abgebrochen",
     "cl_wellpump_fill_target": "Eimer füllen",

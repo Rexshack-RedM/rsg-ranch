@@ -724,7 +724,7 @@
     "ui_guide_selling_title": "Vânzare",
     "ui_guide_selling": "Mână vitele la un punct de vânzare ca să le vinzi sau vinde porci, vaci și oi din fila Piață. Animalele în floarea vârstei aduc cei mai mulți bani.",
     "cl_wellpump_title": "Pompă de fântână",
-    "cl_wellpump_place_help": "[Click st.] Plasează   [Q / E] Rotește   [Sus / Jos] Înălțime   [Click dr.] Anulează",
+    "cl_wellpump_place_help": "[ENTER] Plasează   [Stânga / Dreapta] Rotește   [Sus / Jos] Înălțime   [Click dr. / Backspace] Anulează",
     "cl_wellpump_too_far": "Prea departe",
     "cl_wellpump_cancelled": "Anulat",
     "cl_wellpump_fill_target": "Umple găleata",

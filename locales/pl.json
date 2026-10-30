@@ -724,7 +724,7 @@
     "ui_guide_selling_title": "Sprzedaż",
     "ui_guide_selling": "Zaganiaj bydło do punktu sprzedaży, aby je sprzedać, albo sprzedawaj świnie, krowy i owce w zakładce Targ. Zwierzęta w kwiecie wieku są warte najwięcej.",
     "cl_wellpump_title": "Pompa studzienna",
-    "cl_wellpump_place_help": "[LPM] Postaw   [Q / E] Obróć   [Góra / Dół] Wysokość   [PPM] Anuluj",
+    "cl_wellpump_place_help": "[ENTER] Postaw   [Lewo / Prawo] Obróć   [Góra / Dół] Wysokość   [PPM / Backspace] Anuluj",
     "cl_wellpump_too_far": "Za daleko",
     "cl_wellpump_cancelled": "Anulowano",
     "cl_wellpump_fill_target": "Napełnij wiadro",

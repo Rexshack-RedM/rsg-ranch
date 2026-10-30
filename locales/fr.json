@@ -724,7 +724,7 @@
     "ui_guide_selling_title": "Vente",
     "ui_guide_selling": "Amenez le bétail à un point de vente pour le vendre, ou vendez cochons, vaches et moutons dans l'onglet Marché. Les animaux dans la force de l'âge rapportent le plus.",
     "cl_wellpump_title": "Pompe à eau",
-    "cl_wellpump_place_help": "[Clic G] Placer   [Q / E] Tourner   [Haut / Bas] Hauteur   [Clic D] Annuler",
+    "cl_wellpump_place_help": "[ENTRÉE] Placer   [Gauche / Droite] Tourner   [Haut / Bas] Hauteur   [Clic D / Retour arrière] Annuler",
     "cl_wellpump_too_far": "Trop loin",
     "cl_wellpump_cancelled": "Annulé",
     "cl_wellpump_fill_target": "Remplir le seau",

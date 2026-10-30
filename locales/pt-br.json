@@ -724,7 +724,7 @@
     "ui_guide_selling_title": "Venda",
     "ui_guide_selling": "Leve o gado a um ponto de venda para vendê-lo, ou venda porcos, vacas e ovelhas na aba Mercado. Animais no auge valem mais.",
     "cl_wellpump_title": "Bomba de poço",
-    "cl_wellpump_place_help": "[LMB] Posicionar   [Q / E] Girar   [Cima / Baixo] Altura   [RMB] Cancelar",
+    "cl_wellpump_place_help": "[ENTER] Posicionar   [Esquerda / Direita] Girar   [Cima / Baixo] Altura   [Botão dir. / Backspace] Cancelar",
     "cl_wellpump_too_far": "Longe demais",
     "cl_wellpump_cancelled": "Cancelado",
     "cl_wellpump_fill_target": "Encher balde",

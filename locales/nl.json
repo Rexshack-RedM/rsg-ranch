@@ -724,7 +724,7 @@
     "ui_guide_selling_title": "Verkopen",
     "ui_guide_selling": "Drijf vee naar een verkooppunt om het te verkopen, of verkoop varkens, koeien en schapen via het tabblad Markt. Dieren in de bloei van hun leven leveren het meest op.",
     "cl_wellpump_title": "Waterpomp",
-    "cl_wellpump_place_help": "[LMK] Plaatsen   [Q / E] Draaien   [Omhoog / Omlaag] Hoogte   [RMK] Annuleren",
+    "cl_wellpump_place_help": "[ENTER] Plaatsen   [Links / Rechts] Draaien   [Omhoog / Omlaag] Hoogte   [RMK / Backspace] Annuleren",
     "cl_wellpump_too_far": "Te ver weg",
     "cl_wellpump_cancelled": "Geannuleerd",
     "cl_wellpump_fill_target": "Emmer vullen",

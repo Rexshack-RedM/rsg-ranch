@@ -724,7 +724,7 @@
     "ui_guide_selling_title": "Venta",
     "ui_guide_selling": "Arrea el ganado a un punto de venta para venderlo, o vende cerdos, vacas y ovejas en la pestaña Mercado. Los animales en su mejor edad valen más.",
     "cl_wellpump_title": "Bomba de pozo",
-    "cl_wellpump_place_help": "[Clic izq.] Colocar   [Q / E] Girar   [Arriba / Abajo] Altura   [Clic der.] Cancelar",
+    "cl_wellpump_place_help": "[ENTER] Colocar   [Izquierda / Derecha] Girar   [Arriba / Abajo] Altura   [Clic der. / Retroceso] Cancelar",
     "cl_wellpump_too_far": "Demasiado lejos",
     "cl_wellpump_cancelled": "Cancelado",
     "cl_wellpump_fill_target": "Llenar cubo",

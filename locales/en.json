@@ -724,7 +724,7 @@
     "ui_guide_selling_title": "Selling",
     "ui_guide_selling": "Herd cattle to a sale point to sell them, or sell pigs, cows and sheep from the Market tab. Prime-age animals sell for the most.",
     "cl_wellpump_title": "Well Pump",
-    "cl_wellpump_place_help": "[LMB] Place   [Q / E] Rotate   [Up / Down] Height   [RMB] Cancel",
+    "cl_wellpump_place_help": "[ENTER] Place   [Left / Right] Rotate   [Up / Down] Height   [RMB / Backspace] Cancel",
     "cl_wellpump_too_far": "Too far away",
     "cl_wellpump_cancelled": "Cancelled",
     "cl_wellpump_fill_target": "Fill Bucket",

@@ -130,7 +130,7 @@ Config.BucketUses = 5 -- uses a full bucket gets when filled at a well pump (eac
 
 -- Deployable well pump (same as rsg-farming): place it, fill empty buckets, pack it up later
 Config.WellPump = {
-    item             = 'tool_wellpump',     -- usable item that places the pump (own name so it doesn't clash with rsg-farming's tool_wellpump)
+    item             = 'ranch_wellpump',    -- usable item that places the pump (own name so it doesn't clash with rsg-farming's tool_wellpump)
     prop             = 'p_wellpumpnbx01x',
     emptyItem        = 'bucket',             -- required to fill
     fullItem         = 'fullbucket',         -- given after filling (Config.BucketUses uses)

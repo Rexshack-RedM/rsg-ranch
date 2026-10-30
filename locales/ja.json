@@ -724,7 +724,7 @@
     "ui_guide_selling_title": "売却",
     "ui_guide_selling": "牛を売却地点まで追い込んで売るか、「市場」タブで豚・雌牛・羊を売却してください。最盛期の動物が最も高く売れます。",
     "cl_wellpump_title": "井戸ポンプ",
-    "cl_wellpump_place_help": "[左クリック] 設置   [Q / E] 回転   [上 / 下] 高さ   [右クリック] キャンセル",
+    "cl_wellpump_place_help": "[ENTER] 設置   [左 / 右] 回転   [上 / 下] 高さ   [右クリック / Backspace] キャンセル",
     "cl_wellpump_too_far": "遠すぎます",
     "cl_wellpump_cancelled": "キャンセルしました",
     "cl_wellpump_fill_target": "バケツに水を汲む",
