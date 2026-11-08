@@ -55,7 +55,7 @@ A full NUI dashboard opened at the ranch NPC, with tabs for:
 
 ### Also included
 - Clears ambient NPCs and wildlife from ranches so your own herd isn't mixed with game animals.
-- Fully translatable through ox_lib locales. It ships with **English, German, Greek, Spanish, French, Japanese, Dutch, Polish, Brazilian Portuguese and Romanian**.
+- Fully translatable through rsg-core locales (set the language with `setr rsg:locale <code>`). It ships with **English, German, Greek, Spanish, French, Japanese, Dutch, Polish, Brazilian Portuguese and Romanian**.
 - Every purchase, sale, payout and item change is validated on the server.
 
 ---
@@ -64,11 +64,9 @@ A full NUI dashboard opened at the ranch NPC, with tabs for:
 
 | Resource | Notes |
 |---|---|
-| [rsg-core](https://github.com/Rexshack-RedM/rsg-core) | Framework |
+| [rsg-core](https://github.com/Rexshack-RedM/rsg-core) | Framework, locales, callbacks, notifications, progress bar, text UI, cron |
 | [rsg-inventory](https://github.com/Rexshack-RedM/rsg-inventory) | Items and stashes |
-| [rsg-multijob](https://github.com/Rexshack-RedM/rsg-multijob) | Ranch jobs alongside other jobs |
-| [ox_lib](https://github.com/overextended/ox_lib) | Locales, callbacks, notifications, cron |
-| [ox_target](https://github.com/overextended/ox_target) | NPC, animal and prop interactions |
+| [rsg-target](https://github.com/Rexshack-RedM/rsg-target) | NPC, animal and prop interactions |
 | [oxmysql](https://github.com/overextended/oxmysql) | Database |
 
 ---
@@ -77,12 +75,10 @@ A full NUI dashboard opened at the ranch NPC, with tabs for:
 
 1. **Add the resource.** Put the `rsg-ranch` folder in your resources folder, then add it to `server.cfg` after its dependencies:
    ```cfg
-   ensure ox_lib
    ensure oxmysql
-   ensure ox_target
+   ensure rsg-target
    ensure rsg-core
    ensure rsg-inventory
-   ensure rsg-multijob
    ensure rsg-ranch
    ```
 
@@ -93,7 +89,7 @@ A full NUI dashboard opened at the ranch NPC, with tabs for:
 
 4. **Images.** Add a PNG for each new item to `rsg-inventory/html/images/`, named after the item (for example `feedtrough.png`). The ranch menu uses these images too.
 
-5. **Jobs.** Job definitions live in rsg-multijob's database (`multijob_jobs`). Each ranch needs a job with the same name as its `ranchid`; `installation/shared_jobs.lua` has the six default ranch jobs to add there (or to `rsg-core/shared/jobs.lua` on older setups). Ranches created in the admin panel register their own job automatically. Every ranch job has three grades:
+5. **Jobs.** Job definitions live in rsg-core's multijob database table (`multijob_jobs`). Each ranch needs a job with the same name as its `ranchid`; `installation/shared_jobs.lua` has the six default ranch jobs to add there (or to `rsg-core/shared/jobs.lua` on older setups). Ranches created in the admin panel register their own job automatically. Every ranch job has three grades:
 
    | Grade | Name | Can do |
    |---|---|---|
@@ -192,7 +188,7 @@ The left side lists every ranch with its owner and counts, and can be searched b
 | Tab | What admins can do |
 |---|---|
 | Ownership | See the owner, assign or transfer ownership (online or offline players), remove the owner (ranch goes back on sale, assets kept), teleport to the animal spawn, or fully reset the ranch with no refund |
-| Staff | Hire at any grade, change grades, fire one or all (online and offline, rsg-multijob kept in sync) |
+| Staff | Hire at any grade, change grades, fire one or all (online and offline, rsg-core multijob list kept in sync) |
 | Livestock | Filter the herd, edit health / hunger / thirst / age / product ready, teleport to an animal, delete one or all, heal and feed everything |
 | Troughs & Coops | Set trough uses, edit coop chickens / eggs / feed, teleport to or delete any of them |
 | Storage | Add free storages, edit label / slots / weight / minimum grade, empty a stash, delete extra storages |
@@ -206,7 +202,7 @@ The left side lists every ranch with its owner and counts, and can be searched b
 
 Panel-created ranches are marked ★. Their Ownership tab adds **Set NPC here**, **Set animal spawn here** and **Delete Ranch** (removes the ranch, everything on it, its staff and its job). They're stored in `rsg_ranch_custom` and load back after a restart. The six config ranches can't be moved or deleted from the panel.
 
-> rsg-multijob only reads job definitions when it starts, so a new ranch's job appears in players' multijob lists after `ensure rsg-multijob` or the next server restart. Assigning the job works immediately.
+> New ranches register their job live through rsg-core's `SaveJobDefinition` (rsg-core 3.1.6+), so hiring works straight away with no restart. Deleting a custom ranch removes its job with `DeleteJobDefinition`.
 
 Every admin action is re-checked on the server and printed to the server console when `Config.Admin.Log = true`.
 

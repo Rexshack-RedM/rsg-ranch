@@ -1,7 +1,6 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
 local buyPointNPCs = {} -- Track spawned buy point NPCs
 local buyPointBlips = {} -- Track spawned buy point blips
-lib.locale()
 
 ---------------------------------------------
 -- confirm animal purchase
@@ -16,7 +15,7 @@ local function ConfirmBuyAnimal(data)
 
     -- Check if player has enough money
     if playerMoney < totalPrice then
-        lib.notify({
+        RSGCore.Functions.Notify({
             title = locale('cl_buypoint_title_1'),
             description = locale('cl_buypoint_description_2'):format(totalPrice, playerMoney),
             type = 'error'
@@ -46,7 +45,7 @@ local function ConfirmBuyAnimal(data)
 
     if alert == 'confirm' then
         -- Process the purchase
-        lib.notify({ title = locale('cl_buypoint_title_6'), description = locale('cl_buypoint_description_7'):format(data.animalName), type = 'inform' })
+        RSGCore.Functions.Notify({ title = locale('cl_buypoint_title_6'), description = locale('cl_buypoint_description_7'):format(data.animalName), type = 'inform' })
 
         TriggerServerEvent('rsg-ranch:server:buyAnimal', {
             animalType = data.animalType,
@@ -145,7 +144,7 @@ local function OpenBuyMenu(buyPointData)
     end
 
     if not isRancher then
-        lib.notify({ title = locale('cl_buypoint_title_18'), description = locale('cl_buypoint_description_19'), type = 'error' })
+        RSGCore.Functions.Notify({ title = locale('cl_buypoint_title_18'), description = locale('cl_buypoint_description_19'), type = 'error' })
         return
     end
 
@@ -304,7 +303,7 @@ local function CleanupExistingBuyPointNPCs()
     local cleanedCount = 0
     
     for _, ped in ipairs(allPeds) do
-        if DoesEntityExist(ped) and ped ~= cache.ped then
+        if DoesEntityExist(ped) and ped ~= PlayerPedId() then
             -- Check if this ped is at a buy point location
             local pedCoords = GetEntityCoords(ped)
             for _, buyPointData in pairs(Config.BuyPointLocations) do
@@ -332,7 +331,7 @@ CreateThread(function()
     Wait(500)
     
     for i, buyPointData in pairs(Config.BuyPointLocations) do
-        lib.requestModel(buyPointData.npcmodel, 10000)
+        RSGCore.Functions.RequestModel(buyPointData.npcmodel, 10000)
         
         local buyPointNPC = CreatePed(buyPointData.npcmodel, buyPointData.npccoords.x, buyPointData.npccoords.y, buyPointData.npccoords.z - 1, buyPointData.npccoords.w, false, true, 0, 0)
         Citizen.InvokeNative(0x283978A15512B2FE, buyPointNPC, true)
@@ -347,7 +346,7 @@ CreateThread(function()
         buyPointNPCs[i] = buyPointNPC
         
         -- target interaction
-        exports.ox_target:addLocalEntity(buyPointNPC, {
+        exports['rsg-target']:addLocalEntity(buyPointNPC, {
             {
                 name = 'buy_point_npc',
                 label = locale('cl_buypoint_label_36'),
@@ -373,7 +372,7 @@ AddEventHandler('onResourceStop', function(resourceName)
     -- Clean up buy point NPCs
     for i, npc in pairs(buyPointNPCs) do
         if DoesEntityExist(npc) then
-            exports.ox_target:removeLocalEntity(npc, 'buy_point_npc')
+            exports['rsg-target']:removeLocalEntity(npc, 'buy_point_npc')
             DeletePed(npc)
             if Config.Debug then
                 print('^1[BUYPOINT DEBUG]^7 Cleaned up buy point NPC ' .. i .. ' (entity: ' .. npc .. ')')

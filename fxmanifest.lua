@@ -3,10 +3,10 @@ rdr3_warning 'I acknowledge that this is a prerelease build of RedM, and I am aw
 game 'rdr3'
 
 description 'rsg-ranch'
-version '3.1.4'
+version '3.2.0'
 
 shared_scripts {
-    '@ox_lib/init.lua',
+    '@rsg-core/shared/locale.lua',
     'shared/config.lua',
 }
 
@@ -31,9 +31,7 @@ server_scripts {
 dependencies {
     'rsg-core',
     'rsg-inventory',
-    'rsg-multijob',
-    'ox_lib',
-    'ox_target',
+    'rsg-target',
     'oxmysql',
 }
 

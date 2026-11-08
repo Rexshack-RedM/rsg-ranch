@@ -1,5 +1,4 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 
 ---------------------------------------------
 -- Core Variables
@@ -29,7 +28,7 @@ local function SpawnWaterTrough(data)
     end
 
     local model = Config.WaterTroughModel
-    lib.requestModel(model, 5000)
+    RSGCore.Functions.RequestModel(model, 5000)
     if not HasModelLoaded(model) then
         if Config.Debug then
             print('^1[WATERTROUGH]^7 Failed to load model for water trough ' .. key)
@@ -62,7 +61,7 @@ local function SpawnWaterTrough(data)
         entity = entity
     }
 
-    exports.ox_target:addLocalEntity(entity, {
+    exports['rsg-target']:addLocalEntity(entity, {
         {
             name = 'ranch_watertrough',
             label = locale('cl_watertroughs_label_1'),
@@ -71,7 +70,7 @@ local function SpawnWaterTrough(data)
                 local uses = entry and entry.data and entry.data.uses or 0
                 local maxUses = Config.WaterTroughUses or 10
                 local pct = maxUses > 0 and math.floor((uses / maxUses) * 100) or 0
-                lib.notify({ title = locale('cl_watertroughs_title_2'), description = locale('cl_watertroughs_description_3'):format(uses, maxUses, pct), type = 'inform' })
+                RSGCore.Functions.Notify({ title = locale('cl_watertroughs_title_2'), description = locale('cl_watertroughs_description_3'):format(uses, maxUses, pct), type = 'inform' })
             end,
             canInteract = function()
                 return isPlayerRanchStaff()
@@ -135,7 +134,7 @@ local function DespawnWaterTrough(watertroughid)
     if not entry then return end
 
     if entry.entity and DoesEntityExist(entry.entity) then
-        exports.ox_target:removeLocalEntity(entry.entity, {'ranch_watertrough', 'ranch_watertrough_refill', 'ranch_watertrough_move', 'ranch_watertrough_delete'})
+        exports['rsg-target']:removeLocalEntity(entry.entity, {'ranch_watertrough', 'ranch_watertrough_refill', 'ranch_watertrough_move', 'ranch_watertrough_delete'})
         DeleteObject(entry.entity)
     end
 
@@ -186,7 +185,7 @@ local function StartWaterTroughPlacement()
             TriggerServerEvent('rsg-ranch:server:placeWaterTrough', coords.x, coords.y, coords.z, heading)
         end,
         onCancel = function()
-            lib.notify({ title = locale('cl_watertroughs_title_9'), description = locale('cl_watertroughs_description_10'), type = 'inform' })
+            RSGCore.Functions.Notify({ title = locale('cl_watertroughs_title_9'), description = locale('cl_watertroughs_description_10'), type = 'inform' })
         end
     })
 end
@@ -196,7 +195,7 @@ RegisterNetEvent('rsg-ranch:client:startWaterTroughPlacement', function()
 end)
 
 ---------------------------------------------
--- Move preview flow (triggered by "Move Water Trough" via ox_target, once the
+-- Move preview flow (triggered by "Move Water Trough" via rsg-target, once the
 -- server has confirmed the player owns/is near the trough). The existing local
 -- prop is hidden for the mover during the preview and restored on cancel; on
 -- confirm every client (including this one) relocates their local prop once the
@@ -209,7 +208,7 @@ local function StartWaterTroughMove(watertroughid)
 
     local hadEntity = entry.entity and DoesEntityExist(entry.entity)
     if hadEntity then
-        exports.ox_target:removeLocalEntity(entry.entity, {'ranch_watertrough', 'ranch_watertrough_refill', 'ranch_watertrough_move', 'ranch_watertrough_delete'})
+        exports['rsg-target']:removeLocalEntity(entry.entity, {'ranch_watertrough', 'ranch_watertrough_refill', 'ranch_watertrough_move', 'ranch_watertrough_delete'})
         DeleteObject(entry.entity)
         entry.entity = nil
     end
@@ -220,7 +219,7 @@ local function StartWaterTroughMove(watertroughid)
             TriggerServerEvent('rsg-ranch:server:confirmMoveWaterTrough', watertroughid, coords.x, coords.y, coords.z, heading)
         end,
         onCancel = function()
-            lib.notify({ title = locale('cl_watertroughs_title_11'), description = locale('cl_watertroughs_description_12'), type = 'inform' })
+            RSGCore.Functions.Notify({ title = locale('cl_watertroughs_title_11'), description = locale('cl_watertroughs_description_12'), type = 'inform' })
             -- Respawn the prop where it still is according to our cached data
             if waterTroughCache[key] then
                 SpawnWaterTrough(waterTroughCache[key].data)
@@ -228,7 +227,7 @@ local function StartWaterTroughMove(watertroughid)
         end
     })
 
-    -- Another placement was already active (shouldn't normally happen since the ox_target
+    -- Another placement was already active (shouldn't normally happen since the rsg-target
     -- option is hidden while placing) - restore the prop we just hid rather than lose it.
     if not started and waterTroughCache[key] then
         SpawnWaterTrough(waterTroughCache[key].data)
@@ -311,7 +310,7 @@ end)
 ---------------------------------------------
 CreateThread(function()
     Wait(2000)
-    if cache.ped and DoesEntityExist(cache.ped) then
+    if PlayerPedId() and DoesEntityExist(PlayerPedId()) then
         TriggerServerEvent('rsg-ranch:server:refreshWaterTroughs')
     end
 end)

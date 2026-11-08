@@ -9,7 +9,7 @@ local function FadePed(ped, from, to, step)
 end
 
 local function SpawnRanchPed(npcData)
-    lib.requestModel(npcData.npcmodel, 10000)
+    exports['rsg-core']:RequestModel(npcData.npcmodel, 10000)
 
     local ped = CreatePed(npcData.npcmodel, npcData.npccoords.x, npcData.npccoords.y, npcData.npccoords.z - 1.0, npcData.npccoords.w, false, false, 0, 0)
     SetModelAsNoLongerNeeded(npcData.npcmodel)
@@ -28,7 +28,7 @@ local function SpawnRanchPed(npcData)
         SetEntityAlpha(ped, 255, false)
     end
 
-    exports.ox_target:addLocalEntity(ped, {
+    exports['rsg-target']:addLocalEntity(ped, {
         {
             name = 'npc_ranch',
             icon = 'far fa-eye',
@@ -57,7 +57,7 @@ local spawnedAt = {}
 
 CreateThread(function()
     while true do
-        local playerCoords = GetEntityCoords(cache.ped)
+        local playerCoords = GetEntityCoords(PlayerPedId())
         local present = {}
 
         for _, npcData in pairs(Config.RanchLocations) do

@@ -1,5 +1,4 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 
 ---------------------------------------------
 -- Core Variables
@@ -64,9 +63,9 @@ local function SetChickenPedCount(key, targetCount)
 
     if targetCount > currentCount then
         local model = Config.ChickenModel
-        lib.requestModel(model, 5000)
+        RSGCore.Functions.RequestModel(model, 5000)
         if not HasModelLoaded(model) then
-            lib.notify({ title = locale('cl_chickencoop_title_1'), description = locale('cl_chickencoop_description_2'), type = 'error' })
+            RSGCore.Functions.Notify({ title = locale('cl_chickencoop_title_1'), description = locale('cl_chickencoop_description_2'), type = 'error' })
             if Config.Debug then
                 print('^1[CHICKENCOOP]^7 Failed to load chicken model for coop ' .. key)
             end
@@ -122,7 +121,7 @@ local function SpawnChickenCoop(data)
     end
 
     local model = Config.ChickenCoopModel
-    lib.requestModel(model, 5000)
+    RSGCore.Functions.RequestModel(model, 5000)
     if not HasModelLoaded(model) then
         if Config.Debug then
             print('^1[CHICKENCOOP]^7 Failed to load model for chicken coop ' .. key)
@@ -156,17 +155,17 @@ local function SpawnChickenCoop(data)
         chickens = {}
     }
 
-    exports.ox_target:addLocalEntity(entity, {
+    exports['rsg-target']:addLocalEntity(entity, {
         {
             name = 'ranch_chickencoop_check',
             label = locale('cl_chickencoop_label_3'),
             onSelect = function()
                 RSGCore.Functions.TriggerCallback('rsg-ranch:server:getChickenCoopStatus', function(status)
                     if not status then
-                        lib.notify({ title = locale('cl_chickencoop_title_4'), description = locale('cl_chickencoop_description_5'), type = 'error' })
+                        RSGCore.Functions.Notify({ title = locale('cl_chickencoop_title_4'), description = locale('cl_chickencoop_description_5'), type = 'error' })
                         return
                     end
-                    lib.notify({
+                    RSGCore.Functions.Notify({
                         title = locale('cl_chickencoop_title_6'),
                         description = locale('cl_chickencoop_description_7'):format(status.chickens, Config.MaxChickensPerCoop, status.eggsReady,
                             status.feedLevel, status.maxFeedLevel or Config.ChickenCoopMaxFeedLevel or 100),
@@ -249,7 +248,7 @@ local function DespawnChickenCoop(coopid)
     if not entry then return end
 
     if entry.entity and DoesEntityExist(entry.entity) then
-        exports.ox_target:removeLocalEntity(entry.entity, {'ranch_chickencoop_check', 'ranch_chickencoop_feed', 'ranch_chickencoop_buy', 'ranch_chickencoop_collect', 'ranch_chickencoop_delete'})
+        exports['rsg-target']:removeLocalEntity(entry.entity, {'ranch_chickencoop_check', 'ranch_chickencoop_feed', 'ranch_chickencoop_buy', 'ranch_chickencoop_collect', 'ranch_chickencoop_delete'})
         DeleteObject(entry.entity)
     end
 
@@ -277,7 +276,7 @@ local function StartChickenCoopPlacement()
             TriggerServerEvent('rsg-ranch:server:placeChickenCoop', coords.x, coords.y, coords.z, heading)
         end,
         onCancel = function()
-            lib.notify({ title = locale('cl_chickencoop_title_14'), description = locale('cl_chickencoop_description_15'), type = 'inform' })
+            RSGCore.Functions.Notify({ title = locale('cl_chickencoop_title_14'), description = locale('cl_chickencoop_description_15'), type = 'inform' })
         end
     })
 end
@@ -337,7 +336,7 @@ end)
 ---------------------------------------------
 CreateThread(function()
     Wait(2000)
-    if cache.ped and DoesEntityExist(cache.ped) then
+    if PlayerPedId() and DoesEntityExist(PlayerPedId()) then
         TriggerServerEvent('rsg-ranch:server:refreshChickenCoops')
     end
 end)

@@ -1,5 +1,4 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 
 ---------------------------------------------
 -- Ranch management NUI
@@ -41,12 +40,9 @@ function GetUiLocales()
     if uiLocales then return uiLocales end
 
     local all
-    local ok, result = pcall(lib.getLocales)
-    if ok and type(result) == 'table' and next(result) then
-        all = result
-    else
-        -- fallback: read the locale file directly
-        local lang = GetConvar('ox:locale', 'en')
+    do
+        -- read the locale file directly (same convar order as rsg-core: rsg:locale -> ox:locale -> en)
+        local lang = GetConvar('rsg:locale', GetConvar('ox:locale', 'en'))
         local raw = LoadResourceFile(GetCurrentResourceName(), ('locales/%s.json'):format(lang))
             or LoadResourceFile(GetCurrentResourceName(), 'locales/en.json')
         all = raw and json.decode(raw) or {}
@@ -273,7 +269,7 @@ end)
 ---------------------------------------------
 -- server asks this player to accept a job offer / ranch transfer
 ---------------------------------------------
-lib.callback.register('rsg-ranch:client:requestConsent', function(header, content, timeout)
+RSGCore.Functions.CreateClientCallback('rsg-ranch:client:requestConsent', function(cb, header, content, timeout)
     if uiOpen then CloseUI() end
     local answered = false
     SetTimeout((tonumber(timeout) or 20) * 1000, function()
@@ -286,7 +282,7 @@ lib.callback.register('rsg-ranch:client:requestConsent', function(header, conten
         labels = { confirm = locale('cl_consent_accept'), cancel = locale('cl_consent_decline') },
     })
     answered = true
-    return result == 'confirm'
+    cb(result == 'confirm')
 end)
 
 AddEventHandler('onResourceStop', function(resourceName)

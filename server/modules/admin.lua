@@ -1,5 +1,9 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
+
+-- rsg-core callback wrapper: handlers keep returning values, rsg-core answers via cb
+local function RegisterCallback(name, fn)
+    RSGCore.Functions.CreateCallback(name, function(source, cb, ...) cb(fn(source, ...)) end)
+end
 
 ---------------------------------------------
 -- Ranch admin panel (server)
@@ -114,14 +118,21 @@ local function CoreJobs()
     return ok and core and core.Shared and core.Shared.Jobs or {}
 end
 
--- registers the ranch's job with rsg-core (live) and rsg-multijob's table (persistent)
+-- registers the ranch's job with rsg-core's multijob registry (persistent + live, no restart needed)
 local function EnsureRanchJob(ranchid, label)
-    local job = { label = label, type = 'rancher', defaultDuty = true, offDutyPay = false, grades = DefaultRanchGrades }
+    local job = { name = ranchid, label = label, type = 'rancher', defaultDuty = true, offDutyPay = false, grades = DefaultRanchGrades }
+    local okGet, existing = pcall(RSGCore.Functions.GetJobDefinition, ranchid)
+    if okGet and existing then return end -- already registered; keep any edits made in the job admin
+
+    local ok, saved, err = pcall(RSGCore.Functions.SaveJobDefinition, job)
+    if ok and saved then return end
+
+    -- registry not loaded yet (early start) or older rsg-core: fall back to table + live core job
+    print(('^3[RANCH ADMIN]^7 SaveJobDefinition(%s) unavailable (%s), using fallback'):format(ranchid, tostring(ok and err or saved)))
     pcall(MySQL.query.await, [[INSERT IGNORE INTO multijob_jobs (name, label, type, icon, default_duty, off_duty_pay, grades) VALUES (?, ?, 'rancher', NULL, 1, 0, ?)]],
         { ranchid, label, json.encode(DefaultRanchGrades) })
     if not CoreJobs()[ranchid] then
-        local ok, res, err = pcall(function() return exports['rsg-core']:AddJob(ranchid, job) end)
-        if not ok or res == false then print(('^1[RANCH ADMIN]^7 rsg-core AddJob(%s) failed: %s'):format(ranchid, tostring(ok and err or res))) end
+        pcall(function() return exports['rsg-core']:AddJob(ranchid, job) end)
     end
     RSGCore.Shared.Jobs[ranchid] = RSGCore.Shared.Jobs[ranchid] or job
 end
@@ -169,7 +180,7 @@ CreateThread(function()
     TriggerClientEvent('rsg-ranch:client:applyRanchSettings', -1, SettingsSnapshot())
 end)
 
-lib.callback.register('rsg-ranch:server:getRanchSettings', function()
+RegisterCallback('rsg-ranch:server:getRanchSettings', function()
     return SettingsSnapshot()
 end)
 
@@ -231,7 +242,7 @@ local function RemoveStaffJob(ranchid, citizenid)
     local P = RSGCore.Functions.GetPlayerByCitizenId(citizenid)
     if P then
         if P.PlayerData.job.name == ranchid then P.Functions.SetJob('unemployed', 0) end
-        TriggerClientEvent('ox_lib:notify', P.PlayerData.source, { type = 'error', description = locale('sv_adm_removed_from_ranch'):format((GetRanch(ranchid) or {}).name or ranchid) })
+        TriggerClientEvent('RSGCore:Client:Notify', P.PlayerData.source, { type = 'error', description = locale('sv_adm_removed_from_ranch'):format((GetRanch(ranchid) or {}).name or ranchid) })
     else
         MySQL.update.await('UPDATE players SET job = JSON_SET(JSON_SET(job, "$.name", "unemployed"), "$.grade", JSON_OBJECT("level", 0, "name", "Unemployed")) WHERE citizenid = ? AND JSON_UNQUOTE(JSON_EXTRACT(job, "$.name")) = ?', { citizenid, ranchid })
     end
@@ -288,7 +299,7 @@ local function CountBy(tbl)
     return out
 end
 
-lib.callback.register('rsg-ranch:admin:getOverview', function(src)
+RegisterCallback('rsg-ranch:admin:getOverview', function(src)
     if not IsAdmin(src) then return nil end
     local animals, feed, water = CountBy('rsg_ranch_animals'), CountBy('rsg_ranch_feedtroughs'), CountBy('rsg_ranch_watertroughs')
     local coops, storages, orders = CountBy('rsg_ranch_chickencoops'), CountBy('rsg_ranch_storages'), CountBy('rsg_ranch_orders')
@@ -318,7 +329,7 @@ lib.callback.register('rsg-ranch:admin:getOverview', function(src)
     }
 end)
 
-lib.callback.register('rsg-ranch:admin:getRanch', function(src, ranchid)
+RegisterCallback('rsg-ranch:admin:getRanch', function(src, ranchid)
     if not IsAdmin(src) then return nil end
     local r = GetRanch(ranchid)
     if not r then return nil end
@@ -385,7 +396,7 @@ Actions.setOwner = function(src, ranchid, d)
     B().EnsureGeneralStorage(ranchid)
 
     local P = RSGCore.Functions.GetPlayerByCitizenId(cid)
-    if P then TriggerClientEvent('ox_lib:notify', P.PlayerData.source, { type = 'success', description = locale('sv_adm_given_ranch'):format(GetRanch(ranchid).name) }) end
+    if P then TriggerClientEvent('RSGCore:Client:Notify', P.PlayerData.source, { type = 'success', description = locale('sv_adm_given_ranch'):format(GetRanch(ranchid).name) }) end
     Log(src, ranchid, ('owner set to %s (was %s)'):format(cid, tostring(old)))
     return true, 'sv_adm_owner_set'
 end
@@ -688,9 +699,13 @@ Actions.deleteRanch = function(src, ranchid)
     WipeRanch(ranchid)
     MySQL.query.await('DELETE FROM rsg_ranch_custom WHERE ranchid = ?', { ranchid })
     MySQL.query.await('DELETE FROM rsg_ranch_settings WHERE ranchid = ?', { ranchid })
-    pcall(MySQL.query.await, 'DELETE FROM multijob_jobs WHERE name = ?', { ranchid })
-    pcall(MySQL.query.await, 'DELETE FROM player_jobs WHERE job = ?', { ranchid })
-    pcall(function() exports['rsg-core']:RemoveJob(ranchid) end)
+    local okDel, deleted = pcall(RSGCore.Functions.DeleteJobDefinition, ranchid)
+    if not (okDel and deleted) then
+        -- fallback for older rsg-core / registry not loaded
+        pcall(MySQL.query.await, 'DELETE FROM multijob_jobs WHERE name = ?', { ranchid })
+        pcall(MySQL.query.await, 'DELETE FROM player_jobs WHERE job = ?', { ranchid })
+        pcall(function() exports['rsg-core']:RemoveJob(ranchid) end)
+    end
     for i, x in ipairs(Config.RanchLocations) do
         if x.ranchid == ranchid then table.remove(Config.RanchLocations, i) break end
     end
@@ -700,7 +715,7 @@ Actions.deleteRanch = function(src, ranchid)
     return true, 'sv_adm_ranch_deleted'
 end
 
-lib.callback.register('rsg-ranch:admin:createRanch', function(src, data)
+RegisterCallback('rsg-ranch:admin:createRanch', function(src, data)
     if not IsAdmin(src) then return { ok = false, msg = locale('sv_adm_no_permission') } end
     if type(data) ~= 'table' then return { ok = false, msg = locale('sv_adm_invalid') } end
 
@@ -734,7 +749,7 @@ end)
 
 local busy = {}
 
-lib.callback.register('rsg-ranch:admin:action', function(src, ranchid, kind, data)
+RegisterCallback('rsg-ranch:admin:action', function(src, ranchid, kind, data)
     if not IsAdmin(src) then return { ok = false, msg = locale('sv_adm_no_permission') } end
     if not GetRanch(ranchid) or type(kind) ~= 'string' or not Actions[kind] then return { ok = false, msg = locale('sv_adm_invalid') } end
     if busy[ranchid] then return { ok = false, msg = locale('sv_adm_busy') } end
@@ -751,7 +766,7 @@ end)
 ---------------------------------------------
 -- player search (database + online), used by every player picker in the panel
 ---------------------------------------------
-lib.callback.register('rsg-ranch:admin:searchPlayers', function(src, query)
+RegisterCallback('rsg-ranch:admin:searchPlayers', function(src, query)
     if not IsAdmin(src) then return {} end
     query = tostring(query or ''):sub(1, 50):gsub('^%s+', ''):gsub('%s+$', '')
 
@@ -800,7 +815,7 @@ end)
 RegisterCommand(AdminCfg.Command or 'ranchadmin', function(src)
     if src == 0 then return print('[RANCH ADMIN] use this in game') end
     if not IsAdmin(src) then
-        return TriggerClientEvent('ox_lib:notify', src, { type = 'error', description = locale('sv_adm_no_permission') })
+        return TriggerClientEvent('RSGCore:Client:Notify', src, { type = 'error', description = locale('sv_adm_no_permission') })
     end
     TriggerClientEvent('rsg-ranch:client:openAdmin', src)
 end, false)

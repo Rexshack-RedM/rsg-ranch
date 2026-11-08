@@ -1,5 +1,4 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 
 ---------------------------------------------
 -- Core Variables
@@ -29,7 +28,7 @@ local function SpawnFeedTrough(data)
     end
 
     local model = Config.FeedTroughModel
-    lib.requestModel(model, 5000)
+    RSGCore.Functions.RequestModel(model, 5000)
     if not HasModelLoaded(model) then
         if Config.Debug then
             print('^1[FEEDTROUGH]^7 Failed to load model for feed trough ' .. key)
@@ -62,7 +61,7 @@ local function SpawnFeedTrough(data)
         entity = entity
     }
 
-    exports.ox_target:addLocalEntity(entity, {
+    exports['rsg-target']:addLocalEntity(entity, {
         {
             name = 'ranch_feedtrough',
             label = locale('cl_feedtrough_label_1'),
@@ -71,7 +70,7 @@ local function SpawnFeedTrough(data)
                 local uses = entry and entry.data and entry.data.uses or 0
                 local maxUses = Config.FeedTroughUses or 10
                 local pct = maxUses > 0 and math.floor((uses / maxUses) * 100) or 0
-                lib.notify({ title = locale('cl_feedtrough_title_2'), description = locale('cl_feedtrough_description_3'):format(uses, maxUses, pct), type = 'inform' })
+                RSGCore.Functions.Notify({ title = locale('cl_feedtrough_title_2'), description = locale('cl_feedtrough_description_3'):format(uses, maxUses, pct), type = 'inform' })
             end,
             canInteract = function()
                 return isPlayerRanchStaff()
@@ -135,7 +134,7 @@ local function DespawnFeedTrough(feedtroughid)
     if not entry then return end
 
     if entry.entity and DoesEntityExist(entry.entity) then
-        exports.ox_target:removeLocalEntity(entry.entity, {'ranch_feedtrough', 'ranch_feedtrough_refill', 'ranch_feedtrough_move', 'ranch_feedtrough_delete'})
+        exports['rsg-target']:removeLocalEntity(entry.entity, {'ranch_feedtrough', 'ranch_feedtrough_refill', 'ranch_feedtrough_move', 'ranch_feedtrough_delete'})
         DeleteObject(entry.entity)
     end
 
@@ -186,7 +185,7 @@ local function StartFeedTroughPlacement()
             TriggerServerEvent('rsg-ranch:server:placeFeedTrough', coords.x, coords.y, coords.z, heading)
         end,
         onCancel = function()
-            lib.notify({ title = locale('cl_feedtrough_title_9'), description = locale('cl_feedtrough_description_10'), type = 'inform' })
+            RSGCore.Functions.Notify({ title = locale('cl_feedtrough_title_9'), description = locale('cl_feedtrough_description_10'), type = 'inform' })
         end
     })
 end
@@ -196,7 +195,7 @@ RegisterNetEvent('rsg-ranch:client:startFeedTroughPlacement', function()
 end)
 
 ---------------------------------------------
--- Move preview flow (triggered by "Move Feed Trough" via ox_target, once the
+-- Move preview flow (triggered by "Move Feed Trough" via rsg-target, once the
 -- server has confirmed the player owns/is near the trough). The existing local
 -- prop is hidden for the mover during the preview and restored on cancel; on
 -- confirm every client (including this one) relocates their local prop once the
@@ -209,7 +208,7 @@ local function StartFeedTroughMove(feedtroughid)
 
     local hadEntity = entry.entity and DoesEntityExist(entry.entity)
     if hadEntity then
-        exports.ox_target:removeLocalEntity(entry.entity, {'ranch_feedtrough', 'ranch_feedtrough_refill', 'ranch_feedtrough_move', 'ranch_feedtrough_delete'})
+        exports['rsg-target']:removeLocalEntity(entry.entity, {'ranch_feedtrough', 'ranch_feedtrough_refill', 'ranch_feedtrough_move', 'ranch_feedtrough_delete'})
         DeleteObject(entry.entity)
         entry.entity = nil
     end
@@ -220,7 +219,7 @@ local function StartFeedTroughMove(feedtroughid)
             TriggerServerEvent('rsg-ranch:server:confirmMoveFeedTrough', feedtroughid, coords.x, coords.y, coords.z, heading)
         end,
         onCancel = function()
-            lib.notify({ title = locale('cl_feedtrough_title_11'), description = locale('cl_feedtrough_description_12'), type = 'inform' })
+            RSGCore.Functions.Notify({ title = locale('cl_feedtrough_title_11'), description = locale('cl_feedtrough_description_12'), type = 'inform' })
             if feedTroughCache[key] then
                 SpawnFeedTrough(feedTroughCache[key].data)
             end
@@ -308,7 +307,7 @@ end)
 ---------------------------------------------
 CreateThread(function()
     Wait(2000)
-    if cache.ped and DoesEntityExist(cache.ped) then
+    if PlayerPedId() and DoesEntityExist(PlayerPedId()) then
         TriggerServerEvent('rsg-ranch:server:refreshFeedTroughs')
     end
 end)

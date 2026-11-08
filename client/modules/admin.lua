@@ -1,5 +1,4 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 
 ---------------------------------------------
 -- Ranch admin panel (client) - /ranchadmin
@@ -20,7 +19,7 @@ end)
 
 RegisterNetEvent('rsg-ranch:client:openAdmin', function()
     if adminOpen then return end
-    local overview = lib.callback.await('rsg-ranch:admin:getOverview', false)
+    local overview = RSGCore.Functions.AwaitCallback('rsg-ranch:admin:getOverview', nil)
     if not overview then return end
     adminOpen = true
     SetNuiFocus(true, true)
@@ -33,24 +32,24 @@ RegisterNUICallback('admin:close', function(_, cb)
 end)
 
 RegisterNUICallback('admin:overview', function(_, cb)
-    cb(lib.callback.await('rsg-ranch:admin:getOverview', false) or {})
+    cb(RSGCore.Functions.AwaitCallback('rsg-ranch:admin:getOverview', nil) or {})
 end)
 
 RegisterNUICallback('admin:getRanch', function(data, cb)
-    cb(lib.callback.await('rsg-ranch:admin:getRanch', false, data.ranchid) or {})
+    cb(RSGCore.Functions.AwaitCallback('rsg-ranch:admin:getRanch', nil, data.ranchid) or {})
 end)
 
 RegisterNUICallback('admin:action', function(data, cb)
     if not adminOpen or type(data) ~= 'table' then return cb({ ok = false }) end
-    cb(lib.callback.await('rsg-ranch:admin:action', false, data.ranchid, data.kind, data.data or {}) or { ok = false })
+    cb(RSGCore.Functions.AwaitCallback('rsg-ranch:admin:action', nil, data.ranchid, data.kind, data.data or {}) or { ok = false })
 end)
 
 RegisterNUICallback('admin:createRanch', function(data, cb)
-    cb(lib.callback.await('rsg-ranch:admin:createRanch', false, data or {}) or { ok = false })
+    cb(RSGCore.Functions.AwaitCallback('rsg-ranch:admin:createRanch', nil, data or {}) or { ok = false })
 end)
 
 RegisterNUICallback('admin:searchPlayers', function(data, cb)
-    cb(lib.callback.await('rsg-ranch:admin:searchPlayers', false, data and data.query or '') or {})
+    cb(RSGCore.Functions.AwaitCallback('rsg-ranch:admin:searchPlayers', nil, data and data.query or '') or {})
 end)
 
 -- teleport: same logic as rsg-core's /tp command (RSGCore:Command:TeleportToCoords)

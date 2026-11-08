@@ -1,6 +1,10 @@
 -- Deployable well pumps (ported from rsg-farming)
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
+
+-- rsg-core callback wrapper: handlers keep returning values, rsg-core answers via cb
+local function RegisterCallback(name, fn)
+    RSGCore.Functions.CreateCallback(name, function(source, cb, ...) cb(fn(source, ...)) end)
+end
 
 local WP       = Config.WellPump
 local Pumps    = {}   -- [id] = { id, citizenid, x, y, z, h }
@@ -12,7 +16,7 @@ local Loaded   = false
 -- helpers
 ---------------------------------
 local function notify(src, desc, ntype)
-    TriggerClientEvent('ox_lib:notify', src, { title = locale('cl_wellpump_title'), description = desc, type = ntype or 'inform', duration = 4000 })
+    TriggerClientEvent('RSGCore:Client:Notify', src, { title = locale('cl_wellpump_title'), description = desc, type = ntype or 'inform', duration = 4000 })
 end
 
 local function distanceTo(src, x, y, z)
@@ -147,7 +151,7 @@ CreateThread(function()
     syncAll()
 end)
 
-lib.callback.register('rsg-ranch:server:getPumps', function()
+RegisterCallback('rsg-ranch:server:getPumps', function()
     while not Loaded do Wait(100) end
     return list()
 end)
@@ -167,7 +171,7 @@ end)
 ---------------------------------
 -- place
 ---------------------------------
-lib.callback.register('rsg-ranch:server:placePump', function(source, coords, heading)
+RegisterCallback('rsg-ranch:server:placePump', function(source, coords, heading)
     local src = source
     local Player = RSGCore.Functions.GetPlayer(src)
     coords = toCoords(coords)
@@ -205,7 +209,7 @@ end)
 ---------------------------------
 -- pre-check (starts the action timer)
 ---------------------------------
-lib.callback.register('rsg-ranch:server:pumpPrecheck', function(source, action, pumpId)
+RegisterCallback('rsg-ranch:server:pumpPrecheck', function(source, action, pumpId)
     if not Rules[action] then return false, locale('sv_wellpump_action_invalid') end
     local Player, pump, err = validate(source, pumpId)
     if not Player then return false, err end
@@ -218,7 +222,7 @@ end)
 ---------------------------------
 -- fill bucket
 ---------------------------------
-lib.callback.register('rsg-ranch:server:fillBucket', function(source, pumpId)
+RegisterCallback('rsg-ranch:server:fillBucket', function(source, pumpId)
     local Player, _, err = checkAction(source, 'fill', pumpId)
     if not Player then return false, err end
     if not removeItem(source, WP.emptyItem, 1, nil, 'rsg-ranch:fill') then return false, locale('sv_wellpump_no_bucket') end
@@ -234,7 +238,7 @@ end)
 ---------------------------------
 -- pack up
 ---------------------------------
-lib.callback.register('rsg-ranch:server:packPump', function(source, pumpId)
+RegisterCallback('rsg-ranch:server:packPump', function(source, pumpId)
     local Player, pump, err = checkAction(source, 'pack', pumpId)
     if not Player then return false, err end
 

@@ -1,11 +1,10 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 
--- rsg-multijob integration (exports: AddJob / RemoveJob / GetJobs).
--- AddJob enforces rsg-multijob's own Config.MaxJobs and returns false, 'max_jobs'
+-- rsg-core multijob integration (RSGCore.Functions.AddPlayerJob / RemovePlayerJob).
+-- AddPlayerJob enforces rsg-core's multijob MaxJobs and returns false, 'max_jobs'
 -- when the player is full, so no limit is duplicated here.
 local function MultijobAddJob(citizenid, job, grade)
-    local ok, success, reason = pcall(function() return exports['rsg-multijob']:AddJob(citizenid, job, grade) end)
+    local ok, success, reason = pcall(RSGCore.Functions.AddPlayerJob, citizenid, job, grade)
     if not ok then
         if Config.Debug then print('^1[RANCH MULTIJOB]^7 AddJob failed: ' .. tostring(success)) end
         return true -- don't block ranch actions if multijob is missing/broken
@@ -14,7 +13,7 @@ local function MultijobAddJob(citizenid, job, grade)
 end
 
 local function MultijobRemoveJob(citizenid, job)
-    local ok, res = pcall(function() return exports['rsg-multijob']:RemoveJob(citizenid, job) end)
+    local ok, res = pcall(RSGCore.Functions.RemovePlayerJob, citizenid, job)
     return ok and res
 end
 
@@ -201,13 +200,13 @@ local function RanchCan(Player, permission)
 end
 
 local function DenyPermission(src)
-    TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_no_grade_permission')})
+    TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_no_grade_permission')})
 end
 
 ---------------------------------------------
 -- Fire every member of staff at a ranch (used when a ranch is sold outright
 -- and closes for business). Handles online and offline employees, and
--- cleans up rsg-multijob for each. Pass exceptCitizenid to skip one player
+-- cleans up the rsg-core multijob list for each. Pass exceptCitizenid to skip one player
 -- (e.g. keep a new owner employed during a transfer-style operation).
 ---------------------------------------------
 local function FireAllRanchStaff(ranchid, exceptCitizenid)
@@ -219,7 +218,7 @@ local function FireAllRanchStaff(ranchid, exceptCitizenid)
         if targetPlayer and targetPlayer.PlayerData.job.name == ranchid and targetPlayer.PlayerData.citizenid ~= exceptCitizenid then
             targetPlayer.Functions.SetJob('unemployed', 0)
             MultijobRemoveJob(targetPlayer.PlayerData.citizenid, ranchid)
-            TriggerClientEvent('ox_lib:notify', playerId, {type = 'error', description = locale('sv_server_description_1')})
+            TriggerClientEvent('RSGCore:Client:Notify', playerId, {type = 'error', description = locale('sv_server_description_1')})
             processedCitizenIds[targetPlayer.PlayerData.citizenid] = true
         end
     end
@@ -370,7 +369,7 @@ local function ValidCoords(x, y, z, w)
 end
 
 local function NotifyNotNearRanch(src)
-    TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_not_near_ranch')})
+    TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_not_near_ranch')})
 end
 
 ---------------------------------------------
@@ -385,7 +384,7 @@ local function RequestConsent(targetId, header, content)
         settled = true
         p:resolve(value)
     end
-    lib.callback('rsg-ranch:client:requestConsent', targetId, function(accepted)
+    RSGCore.Functions.TriggerClientCallback('rsg-ranch:client:requestConsent', targetId, function(accepted)
         settle(accepted == true)
     end, header, content, timeout)
     -- resolve as declined if the target never answers (closed game, disconnected...)
@@ -732,7 +731,7 @@ RegisterNetEvent('rsg-ranch:server:openranchstorage', function(data)
     -- Confirm the storage actually belongs to this ranch before opening it
     local storage = MySQL.query.await('SELECT storageid, label, maxweight, slots, min_grade FROM rsg_ranch_storages WHERE storageid = ? AND ranchid = ?', { data.storageid, data.ranchid })
     if not storage or not storage[1] then
-        TriggerClientEvent('ox_lib:notify', src, { type = 'error', description = locale('sv_server_description_2')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, { type = 'error', description = locale('sv_server_description_2')})
         return
     end
 
@@ -742,7 +741,7 @@ RegisterNetEvent('rsg-ranch:server:openranchstorage', function(data)
     -- Config.StorageMinJobGrade, already checked above for storage access
     -- in general)
     if playerjobgrade < row.min_grade then
-        TriggerClientEvent('ox_lib:notify', src, { type = 'error', description = locale('sv_server_description_3')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, { type = 'error', description = locale('sv_server_description_3')})
         return
     end
 
@@ -759,12 +758,12 @@ local function HandlePurchaseRanchStorage(src, data)
 
     -- Must be the boss of this ranch to buy more storage
     if Player.PlayerData.job.name ~= ranchid or Player.PlayerData.job.grade.level < Config.RanchBossGrade then
-        TriggerClientEvent('ox_lib:notify', src, { type = 'error', description = locale('sv_server_description_4')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, { type = 'error', description = locale('sv_server_description_4')})
         return
     end
 
     if RanchOwners[ranchid] ~= Player.PlayerData.citizenid then
-        TriggerClientEvent('ox_lib:notify', src, { type = 'error', description = locale('sv_server_description_5')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, { type = 'error', description = locale('sv_server_description_5')})
         return
     end
 
@@ -772,7 +771,7 @@ local function HandlePurchaseRanchStorage(src, data)
 
     local sizeConfig = Config.RanchStorageSizes and Config.RanchStorageSizes[data.size]
     if not sizeConfig then
-        TriggerClientEvent('ox_lib:notify', src, { type = 'error', description = locale('sv_server_description_6')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, { type = 'error', description = locale('sv_server_description_6')})
         return
     end
 
@@ -780,7 +779,7 @@ local function HandlePurchaseRanchStorage(src, data)
         local countResult = MySQL.query.await('SELECT COUNT(*) as count FROM rsg_ranch_storages WHERE ranchid = ? AND size != ?', { ranchid, 'general' })
         local additionalCount = countResult and countResult[1] and countResult[1].count or 0
         if additionalCount >= Config.MaxAdditionalStorages then
-            TriggerClientEvent('ox_lib:notify', src, { type = 'error', description = locale('sv_server_description_7')})
+            TriggerClientEvent('RSGCore:Client:Notify', src, { type = 'error', description = locale('sv_server_description_7')})
             return
         end
     end
@@ -788,7 +787,7 @@ local function HandlePurchaseRanchStorage(src, data)
     local price = sizeConfig.price
     local playerMoney = Player.PlayerData.money.cash
     if playerMoney < price then
-        TriggerClientEvent('ox_lib:notify', src, { type = 'error', description = locale('sv_server_description_8'):format(price, playerMoney)})
+        TriggerClientEvent('RSGCore:Client:Notify', src, { type = 'error', description = locale('sv_server_description_8'):format(price, playerMoney)})
         return
     end
 
@@ -799,7 +798,7 @@ local function HandlePurchaseRanchStorage(src, data)
     -- queries below, so this is the real point of no return.
     local moneyRemoved = Player.Functions.RemoveMoney('cash', price, 'rsg-ranch-storage')
     if not moneyRemoved then
-        TriggerClientEvent('ox_lib:notify', src, { type = 'error', description = locale('sv_server_description_9'):format(price, Player.PlayerData.money.cash)})
+        TriggerClientEvent('RSGCore:Client:Notify', src, { type = 'error', description = locale('sv_server_description_9'):format(price, Player.PlayerData.money.cash)})
         return
     end
 
@@ -820,20 +819,20 @@ local function HandlePurchaseRanchStorage(src, data)
     if not success then
         -- The database insert failed after money was already taken - refund it
         Player.Functions.AddMoney('cash', price, 'rsg-ranch-storage-refund')
-        TriggerClientEvent('ox_lib:notify', src, { type = 'error', description = locale('sv_server_description_10')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, { type = 'error', description = locale('sv_server_description_10')})
         if Config.Debug then
             print('^1[RANCH STORAGE PURCHASE ERROR]^7 Database insert failed: ' .. tostring(dbError))
         end
         return
     end
 
-    TriggerClientEvent('ox_lib:notify', src, { type = 'success', description = locale('sv_server_description_11'):format(sizeConfig.label, price)})
+    TriggerClientEvent('RSGCore:Client:Notify', src, { type = 'success', description = locale('sv_server_description_11'):format(sizeConfig.label, price)})
 end
 
 RegisterNetEvent('rsg-ranch:server:purchaseranchstorage', function(data)
     local src = source
     if not RanchWithLock('storagebuy:' .. tostring(src), function() HandlePurchaseRanchStorage(src, data) end) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_152')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_152')})
     end
 end)
 
@@ -846,12 +845,12 @@ RegisterNetEvent('rsg-ranch:server:renameranchstorage', function(data)
     local ranchid = data.ranchid
 
     if Player.PlayerData.job.name ~= ranchid or Player.PlayerData.job.grade.level < Config.RanchBossGrade then
-        TriggerClientEvent('ox_lib:notify', src, { type = 'error', description = locale('sv_server_description_12')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, { type = 'error', description = locale('sv_server_description_12')})
         return
     end
 
     if RanchOwners[ranchid] ~= Player.PlayerData.citizenid then
-        TriggerClientEvent('ox_lib:notify', src, { type = 'error', description = locale('sv_server_description_13')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, { type = 'error', description = locale('sv_server_description_13')})
         return
     end
 
@@ -859,19 +858,19 @@ RegisterNetEvent('rsg-ranch:server:renameranchstorage', function(data)
 
     local label = data.label:gsub('^%s+', ''):gsub('%s+$', '')
     if label == '' or #label > 50 then
-        TriggerClientEvent('ox_lib:notify', src, { type = 'error', description = locale('sv_server_description_14')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, { type = 'error', description = locale('sv_server_description_14')})
         return
     end
 
     local storage = MySQL.query.await('SELECT storageid, size FROM rsg_ranch_storages WHERE storageid = ? AND ranchid = ?', { data.storageid, ranchid })
     if not storage or not storage[1] then
-        TriggerClientEvent('ox_lib:notify', src, { type = 'error', description = locale('sv_server_description_15')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, { type = 'error', description = locale('sv_server_description_15')})
         return
     end
 
     MySQL.update.await('UPDATE rsg_ranch_storages SET label = ? WHERE storageid = ? AND ranchid = ?', { label, data.storageid, ranchid })
 
-    TriggerClientEvent('ox_lib:notify', src, { type = 'success', description = locale('sv_server_description_16'):format(label)})
+    TriggerClientEvent('RSGCore:Client:Notify', src, { type = 'success', description = locale('sv_server_description_16'):format(label)})
 end)
 
 ---------------------------------------------
@@ -887,12 +886,12 @@ RegisterNetEvent('rsg-ranch:server:setstorageaccess', function(data)
     local ranchid = data.ranchid
 
     if Player.PlayerData.job.name ~= ranchid or Player.PlayerData.job.grade.level < Config.RanchBossGrade then
-        TriggerClientEvent('ox_lib:notify', src, { type = 'error', description = locale('sv_server_description_17')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, { type = 'error', description = locale('sv_server_description_17')})
         return
     end
 
     if RanchOwners[ranchid] ~= Player.PlayerData.citizenid then
-        TriggerClientEvent('ox_lib:notify', src, { type = 'error', description = locale('sv_server_description_18')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, { type = 'error', description = locale('sv_server_description_18')})
         return
     end
 
@@ -909,24 +908,24 @@ RegisterNetEvent('rsg-ranch:server:setstorageaccess', function(data)
     end
 
     if not validLevel then
-        TriggerClientEvent('ox_lib:notify', src, { type = 'error', description = locale('sv_server_description_19')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, { type = 'error', description = locale('sv_server_description_19')})
         return
     end
 
     local storage = MySQL.query.await('SELECT storageid, size FROM rsg_ranch_storages WHERE storageid = ? AND ranchid = ?', { data.storageid, ranchid })
     if not storage or not storage[1] then
-        TriggerClientEvent('ox_lib:notify', src, { type = 'error', description = locale('sv_server_description_20')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, { type = 'error', description = locale('sv_server_description_20')})
         return
     end
 
     if storage[1].size == 'general' then
-        TriggerClientEvent('ox_lib:notify', src, { type = 'error', description = locale('sv_server_description_21')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, { type = 'error', description = locale('sv_server_description_21')})
         return
     end
 
     MySQL.update.await('UPDATE rsg_ranch_storages SET min_grade = ? WHERE storageid = ? AND ranchid = ?', { validLevel.grade, data.storageid, ranchid })
 
-    TriggerClientEvent('ox_lib:notify', src, { type = 'success', description = locale('sv_server_description_22'):format(validLevel.label)})
+    TriggerClientEvent('RSGCore:Client:Notify', src, { type = 'success', description = locale('sv_server_description_22'):format(validLevel.label)})
 end)
 
 ---------------------------------------------
@@ -1082,7 +1081,7 @@ RSGCore.Functions.CreateUseableItem(Config.FeedTroughItem, function(source, item
     local Player = RSGCore.Functions.GetPlayer(src)
 
     if not Player or not isPlayerRanchStaff(Player) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_23')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_23')})
         return
     end
 
@@ -1095,7 +1094,7 @@ RegisterNetEvent('rsg-ranch:server:placeFeedTrough', function(pos_x, pos_y, pos_
     local Player = RSGCore.Functions.GetPlayer(src)
 
     if not Player or not isPlayerRanchStaff(Player) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_24')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_24')})
         return
     end
 
@@ -1104,21 +1103,21 @@ RegisterNetEvent('rsg-ranch:server:placeFeedTrough', function(pos_x, pos_y, pos_
     -- Never trust client-supplied coords - the player must actually be near where they claim to place it
     local playerCoords = GetEntityCoords(GetPlayerPed(src))
     if #(playerCoords - vector3(pos_x, pos_y, pos_z)) > Config.PropPlacementMaxDistance then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_25')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_25')})
         return
     end
 
     -- Re-check the item is still present (placement preview takes a moment client-side)
     local hasItem = Player.Functions.GetItemByName(Config.FeedTroughItem)
     if not hasItem or hasItem.amount < 1 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_26')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_26')})
         return
     end
 
     local ranchid = Player.PlayerData.job.name
     local feedtroughid = CreateFeedTroughId()
     if not feedtroughid then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_27')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_27')})
         return
     end
 
@@ -1126,7 +1125,7 @@ RegisterNetEvent('rsg-ranch:server:placeFeedTrough', function(pos_x, pos_y, pos_
     -- succeeded just because GetItemByName saw it a moment ago
     local itemRemoved = exports['rsg-inventory']:RemoveItem(src, Config.FeedTroughItem, 1, nil, 'rsg-ranch')
     if not itemRemoved then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_28')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_28')})
         return
     end
 
@@ -1143,7 +1142,7 @@ RegisterNetEvent('rsg-ranch:server:placeFeedTrough', function(pos_x, pos_y, pos_
         if Config.Debug then
             print('^1[ERROR]^7 Failed to insert feed trough: ' .. tostring(insertResult))
         end
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_29')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_29')})
         return
     end
 
@@ -1160,7 +1159,7 @@ RegisterNetEvent('rsg-ranch:server:placeFeedTrough', function(pos_x, pos_y, pos_
 
     -- Broadcast to everyone so nearby clients (and animal AI) can see it immediately
     TriggerClientEvent('rsg-ranch:client:spawnFeedTrough', -1, feedtroughData)
-    TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('sv_server_description_30')})
+    TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'success', description = locale('sv_server_description_30')})
 
     if Config.Debug then
         print('^2[FEEDTROUGH]^7 Player ' .. src .. ' placed feed trough ' .. feedtroughid .. ' at ranch ' .. ranchid)
@@ -1195,7 +1194,7 @@ RegisterNetEvent('rsg-ranch:server:refillFeedTrough', function(feedtroughid)
     local Player = RSGCore.Functions.GetPlayer(src)
 
     if not Player or not isPlayerRanchStaff(Player) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_31')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_31')})
         return
     end
 
@@ -1203,31 +1202,31 @@ RegisterNetEvent('rsg-ranch:server:refillFeedTrough', function(feedtroughid)
 
     local hasItem = Player.Functions.GetItemByName(Config.FeedBagItem)
     if not hasItem or hasItem.amount < 1 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_32')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_32')})
         return
     end
 
     local feedtroughRows = MySQL.query.await('SELECT feedtroughid, ranchid, pos_x, pos_y, pos_z, uses FROM rsg_ranch_feedtroughs WHERE feedtroughid = ?', {feedtroughid})
     if not feedtroughRows or #feedtroughRows == 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_33')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_33')})
         return
     end
     local feedtrough = feedtroughRows[1]
 
     if feedtrough.ranchid ~= Player.PlayerData.job.name then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_34')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_34')})
         return
     end
 
     local playerCoords = GetEntityCoords(GetPlayerPed(src))
     local feedtroughVec = vector3(feedtrough.pos_x, feedtrough.pos_y, feedtrough.pos_z)
     if #(playerCoords - feedtroughVec) > Config.AnimalInteractionDistance then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_35')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_35')})
         return
     end
 
     if (feedtrough.uses or 0) >= Config.FeedTroughUses then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_36')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_36')})
         return
     end
 
@@ -1236,7 +1235,7 @@ RegisterNetEvent('rsg-ranch:server:refillFeedTrough', function(feedtroughid)
 
     -- take the feed bag first - if it's already gone, no free refill
     if not exports['rsg-inventory']:RemoveItem(src, Config.FeedBagItem, 1, nil, 'rsg-ranch') then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_32')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_32')})
         return
     end
 
@@ -1246,13 +1245,13 @@ RegisterNetEvent('rsg-ranch:server:refillFeedTrough', function(feedtroughid)
 
     if not updateSuccess or not rowsAffected or rowsAffected <= 0 then
         exports['rsg-inventory']:AddItem(src, Config.FeedBagItem, 1, nil, nil, 'rsg-ranch')
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_37')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_37')})
         return
     end
 
 
     TriggerClientEvent('rsg-ranch:client:updateFeedTroughUses', -1, feedtroughid, newUses)
-    TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('sv_server_description_38'):format(newUses, Config.FeedTroughUses)})
+    TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'success', description = locale('sv_server_description_38'):format(newUses, Config.FeedTroughUses)})
 
     if Config.Debug then
         print('^2[FEEDTROUGH]^7 Player ' .. src .. ' refilled feed trough ' .. feedtroughid .. ' to ' .. newUses .. ' uses')
@@ -1266,7 +1265,7 @@ RegisterNetEvent('rsg-ranch:server:requestMoveFeedTrough', function(feedtroughid
     local Player = RSGCore.Functions.GetPlayer(src)
 
     if not Player or not isPlayerRanchStaff(Player) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_39')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_39')})
         return
     end
     if not RanchCan(Player, 'canManageProps') then return DenyPermission(src) end
@@ -1275,20 +1274,20 @@ RegisterNetEvent('rsg-ranch:server:requestMoveFeedTrough', function(feedtroughid
 
     local feedtroughRows = MySQL.query.await('SELECT feedtroughid, ranchid, pos_x, pos_y, pos_z FROM rsg_ranch_feedtroughs WHERE feedtroughid = ?', {feedtroughid})
     if not feedtroughRows or #feedtroughRows == 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_40')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_40')})
         return
     end
     local feedtrough = feedtroughRows[1]
 
     if feedtrough.ranchid ~= Player.PlayerData.job.name then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_41')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_41')})
         return
     end
 
     local playerCoords = GetEntityCoords(GetPlayerPed(src))
     local feedtroughVec = vector3(feedtrough.pos_x, feedtrough.pos_y, feedtrough.pos_z)
     if #(playerCoords - feedtroughVec) > Config.AnimalInteractionDistance then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_42')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_42')})
         return
     end
 
@@ -1306,19 +1305,19 @@ RegisterNetEvent('rsg-ranch:server:confirmMoveFeedTrough', function(feedtroughid
 
     local feedtroughRows = MySQL.query.await('SELECT feedtroughid, ranchid FROM rsg_ranch_feedtroughs WHERE feedtroughid = ?', {feedtroughid})
     if not feedtroughRows or #feedtroughRows == 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_43')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_43')})
         return
     end
 
     if feedtroughRows[1].ranchid ~= Player.PlayerData.job.name then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_44')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_44')})
         return
     end
 
     -- Never trust client-supplied coords - the player must actually be near where they claim to move it to
     local playerCoords = GetEntityCoords(GetPlayerPed(src))
     if #(playerCoords - vector3(pos_x, pos_y, pos_z)) > Config.PropPlacementMaxDistance then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_45')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_45')})
         return
     end
 
@@ -1329,12 +1328,12 @@ RegisterNetEvent('rsg-ranch:server:confirmMoveFeedTrough', function(feedtroughid
     end)
 
     if not updateSuccess or not rowsAffected or rowsAffected <= 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_46')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_46')})
         return
     end
 
     TriggerClientEvent('rsg-ranch:client:moveFeedTrough', -1, feedtroughid, pos_x, pos_y, pos_z, pos_w or 0.0)
-    TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('sv_server_description_47')})
+    TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'success', description = locale('sv_server_description_47')})
 
     if Config.Debug then
         print('^2[FEEDTROUGH]^7 Player ' .. src .. ' moved feed trough ' .. feedtroughid)
@@ -1347,7 +1346,7 @@ RegisterNetEvent('rsg-ranch:server:deleteFeedTrough', function(feedtroughid)
     local Player = RSGCore.Functions.GetPlayer(src)
 
     if not Player or not isPlayerRanchStaff(Player) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_48')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_48')})
         return
     end
     if not RanchCan(Player, 'canManageProps') then return DenyPermission(src) end
@@ -1356,26 +1355,26 @@ RegisterNetEvent('rsg-ranch:server:deleteFeedTrough', function(feedtroughid)
 
     local feedtroughRows = MySQL.query.await('SELECT feedtroughid, ranchid, pos_x, pos_y, pos_z FROM rsg_ranch_feedtroughs WHERE feedtroughid = ?', {feedtroughid})
     if not feedtroughRows or #feedtroughRows == 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_49')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_49')})
         return
     end
     local feedtrough = feedtroughRows[1]
 
     if feedtrough.ranchid ~= Player.PlayerData.job.name then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_50')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_50')})
         return
     end
 
     local playerCoords = GetEntityCoords(GetPlayerPed(src))
     local feedtroughVec = vector3(feedtrough.pos_x, feedtrough.pos_y, feedtrough.pos_z)
     if #(playerCoords - feedtroughVec) > Config.AnimalInteractionDistance then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_51')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_51')})
         return
     end
 
     MySQL.query.await('DELETE FROM rsg_ranch_feedtroughs WHERE feedtroughid = ?', {feedtroughid})
     TriggerClientEvent('rsg-ranch:client:removeFeedTrough', -1, feedtroughid)
-    TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('sv_server_description_52')})
+    TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'success', description = locale('sv_server_description_52')})
 
     if Config.Debug then
         print('^2[FEEDTROUGH]^7 Player ' .. src .. ' deleted feed trough ' .. feedtroughid)
@@ -1431,7 +1430,7 @@ RSGCore.Functions.CreateUseableItem(Config.WaterTroughItem, function(source, ite
     local Player = RSGCore.Functions.GetPlayer(src)
 
     if not Player or not isPlayerRanchStaff(Player) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_53')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_53')})
         return
     end
 
@@ -1444,7 +1443,7 @@ RegisterNetEvent('rsg-ranch:server:placeWaterTrough', function(pos_x, pos_y, pos
     local Player = RSGCore.Functions.GetPlayer(src)
 
     if not Player or not isPlayerRanchStaff(Player) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_54')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_54')})
         return
     end
 
@@ -1453,28 +1452,28 @@ RegisterNetEvent('rsg-ranch:server:placeWaterTrough', function(pos_x, pos_y, pos
     -- Never trust client-supplied coords - the player must actually be near where they claim to place it
     local playerCoords = GetEntityCoords(GetPlayerPed(src))
     if #(playerCoords - vector3(pos_x, pos_y, pos_z)) > Config.PropPlacementMaxDistance then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_55')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_55')})
         return
     end
 
     -- Re-check the item is still present (placement preview takes a moment client-side)
     local hasItem = Player.Functions.GetItemByName(Config.WaterTroughItem)
     if not hasItem or hasItem.amount < 1 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_56')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_56')})
         return
     end
 
     local ranchid = Player.PlayerData.job.name
     local watertroughid = CreateWaterTroughId()
     if not watertroughid then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_57')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_57')})
         return
     end
 
     -- Take the item first and check it actually came off
     local itemRemoved = exports['rsg-inventory']:RemoveItem(src, Config.WaterTroughItem, 1, nil, 'rsg-ranch')
     if not itemRemoved then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_58')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_58')})
         return
     end
 
@@ -1490,7 +1489,7 @@ RegisterNetEvent('rsg-ranch:server:placeWaterTrough', function(pos_x, pos_y, pos
         if Config.Debug then
             print('^1[ERROR]^7 Failed to insert water trough: ' .. tostring(insertResult))
         end
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_59')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_59')})
         return
     end
 
@@ -1507,7 +1506,7 @@ RegisterNetEvent('rsg-ranch:server:placeWaterTrough', function(pos_x, pos_y, pos
 
     -- Broadcast to everyone so nearby clients (and animal AI) can see it immediately
     TriggerClientEvent('rsg-ranch:client:spawnWaterTrough', -1, watertroughData)
-    TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('sv_server_description_60')})
+    TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'success', description = locale('sv_server_description_60')})
 
     if Config.Debug then
         print('^2[WATERTROUGH]^7 Player ' .. src .. ' placed water trough ' .. watertroughid .. ' at ranch ' .. ranchid)
@@ -1542,7 +1541,7 @@ RegisterNetEvent('rsg-ranch:server:refillWaterTrough', function(watertroughid)
     local Player = RSGCore.Functions.GetPlayer(src)
 
     if not Player or not isPlayerRanchStaff(Player) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_61')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_61')})
         return
     end
 
@@ -1550,31 +1549,31 @@ RegisterNetEvent('rsg-ranch:server:refillWaterTrough', function(watertroughid)
 
     local bucket = Player.Functions.GetItemByName(Config.WaterItem)
     if not bucket then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_62')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_62')})
         return
     end
 
     local troughRows = MySQL.query.await('SELECT watertroughid, ranchid, pos_x, pos_y, pos_z, uses FROM rsg_ranch_watertroughs WHERE watertroughid = ?', {watertroughid})
     if not troughRows or #troughRows == 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_64')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_64')})
         return
     end
     local trough = troughRows[1]
 
     if trough.ranchid ~= Player.PlayerData.job.name then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_65')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_65')})
         return
     end
 
     local playerCoords = GetEntityCoords(GetPlayerPed(src))
     local troughVec = vector3(trough.pos_x, trough.pos_y, trough.pos_z)
     if #(playerCoords - troughVec) > Config.AnimalInteractionDistance then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_66')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_66')})
         return
     end
 
     if (trough.uses or 0) >= Config.WaterTroughUses then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_67')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_67')})
         return
     end
 
@@ -1588,7 +1587,7 @@ RegisterNetEvent('rsg-ranch:server:refillWaterTrough', function(watertroughid)
     local info = bucket.info or {}
     local bucketUses = tonumber(info.uses) or maxUses
     if not exports['rsg-inventory']:RemoveItem(src, Config.WaterItem, 1, bucket.slot, 'rsg-ranch:trough-refill') then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_62')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_62')})
         return
     end
 
@@ -1599,7 +1598,7 @@ RegisterNetEvent('rsg-ranch:server:refillWaterTrough', function(watertroughid)
     if not updateSuccess or not rowsAffected or rowsAffected <= 0 then
         -- give the bucket back exactly as it was
         exports['rsg-inventory']:AddItem(src, Config.WaterItem, 1, info, bucket.slot, 'rsg-ranch:trough-refill-refund')
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_68')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_68')})
         return
     end
 
@@ -1616,7 +1615,7 @@ RegisterNetEvent('rsg-ranch:server:refillWaterTrough', function(watertroughid)
     end
 
     TriggerClientEvent('rsg-ranch:client:updateWaterTroughUses', -1, watertroughid, newUses)
-    TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('sv_server_description_69'):format(newUses, Config.WaterTroughUses)})
+    TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'success', description = locale('sv_server_description_69'):format(newUses, Config.WaterTroughUses)})
 
     if Config.Debug then
         print('^2[WATERTROUGH]^7 Player ' .. src .. ' refilled water trough ' .. watertroughid .. ' to ' .. newUses .. ' uses')
@@ -1630,7 +1629,7 @@ RegisterNetEvent('rsg-ranch:server:requestMoveWaterTrough', function(watertrough
     local Player = RSGCore.Functions.GetPlayer(src)
 
     if not Player or not isPlayerRanchStaff(Player) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_70')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_70')})
         return
     end
     if not RanchCan(Player, 'canManageProps') then return DenyPermission(src) end
@@ -1639,20 +1638,20 @@ RegisterNetEvent('rsg-ranch:server:requestMoveWaterTrough', function(watertrough
 
     local troughRows = MySQL.query.await('SELECT watertroughid, ranchid, pos_x, pos_y, pos_z FROM rsg_ranch_watertroughs WHERE watertroughid = ?', {watertroughid})
     if not troughRows or #troughRows == 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_71')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_71')})
         return
     end
     local trough = troughRows[1]
 
     if trough.ranchid ~= Player.PlayerData.job.name then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_72')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_72')})
         return
     end
 
     local playerCoords = GetEntityCoords(GetPlayerPed(src))
     local troughVec = vector3(trough.pos_x, trough.pos_y, trough.pos_z)
     if #(playerCoords - troughVec) > Config.AnimalInteractionDistance then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_73')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_73')})
         return
     end
 
@@ -1670,19 +1669,19 @@ RegisterNetEvent('rsg-ranch:server:confirmMoveWaterTrough', function(watertrough
 
     local troughRows = MySQL.query.await('SELECT watertroughid, ranchid FROM rsg_ranch_watertroughs WHERE watertroughid = ?', {watertroughid})
     if not troughRows or #troughRows == 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_74')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_74')})
         return
     end
 
     if troughRows[1].ranchid ~= Player.PlayerData.job.name then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_75')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_75')})
         return
     end
 
     -- Never trust client-supplied coords - the player must actually be near where they claim to move it to
     local playerCoords = GetEntityCoords(GetPlayerPed(src))
     if #(playerCoords - vector3(pos_x, pos_y, pos_z)) > Config.PropPlacementMaxDistance then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_76')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_76')})
         return
     end
 
@@ -1693,12 +1692,12 @@ RegisterNetEvent('rsg-ranch:server:confirmMoveWaterTrough', function(watertrough
     end)
 
     if not updateSuccess or not rowsAffected or rowsAffected <= 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_77')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_77')})
         return
     end
 
     TriggerClientEvent('rsg-ranch:client:moveWaterTrough', -1, watertroughid, pos_x, pos_y, pos_z, pos_w or 0.0)
-    TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('sv_server_description_78')})
+    TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'success', description = locale('sv_server_description_78')})
 
     if Config.Debug then
         print('^2[WATERTROUGH]^7 Player ' .. src .. ' moved water trough ' .. watertroughid)
@@ -1711,7 +1710,7 @@ RegisterNetEvent('rsg-ranch:server:deleteWaterTrough', function(watertroughid)
     local Player = RSGCore.Functions.GetPlayer(src)
 
     if not Player or not isPlayerRanchStaff(Player) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_79')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_79')})
         return
     end
     if not RanchCan(Player, 'canManageProps') then return DenyPermission(src) end
@@ -1720,26 +1719,26 @@ RegisterNetEvent('rsg-ranch:server:deleteWaterTrough', function(watertroughid)
 
     local troughRows = MySQL.query.await('SELECT watertroughid, ranchid, pos_x, pos_y, pos_z FROM rsg_ranch_watertroughs WHERE watertroughid = ?', {watertroughid})
     if not troughRows or #troughRows == 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_80')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_80')})
         return
     end
     local trough = troughRows[1]
 
     if trough.ranchid ~= Player.PlayerData.job.name then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_81')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_81')})
         return
     end
 
     local playerCoords = GetEntityCoords(GetPlayerPed(src))
     local troughVec = vector3(trough.pos_x, trough.pos_y, trough.pos_z)
     if #(playerCoords - troughVec) > Config.AnimalInteractionDistance then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_82')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_82')})
         return
     end
 
     MySQL.query.await('DELETE FROM rsg_ranch_watertroughs WHERE watertroughid = ?', {watertroughid})
     TriggerClientEvent('rsg-ranch:client:removeWaterTrough', -1, watertroughid)
-    TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('sv_server_description_83')})
+    TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'success', description = locale('sv_server_description_83')})
 
     if Config.Debug then
         print('^2[WATERTROUGH]^7 Player ' .. src .. ' deleted water trough ' .. watertroughid)
@@ -1864,7 +1863,7 @@ RSGCore.Functions.CreateUseableItem(Config.ChickenCoopItem, function(source, ite
     local Player = RSGCore.Functions.GetPlayer(src)
 
     if not Player or not isPlayerRanchStaff(Player) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_84')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_84')})
         return
     end
 
@@ -1877,7 +1876,7 @@ RegisterNetEvent('rsg-ranch:server:placeChickenCoop', function(pos_x, pos_y, pos
     local Player = RSGCore.Functions.GetPlayer(src)
 
     if not Player or not isPlayerRanchStaff(Player) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_85')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_85')})
         return
     end
 
@@ -1886,28 +1885,28 @@ RegisterNetEvent('rsg-ranch:server:placeChickenCoop', function(pos_x, pos_y, pos
     -- Never trust client-supplied coords - the player must actually be near where they claim to place it
     local playerCoords = GetEntityCoords(GetPlayerPed(src))
     if #(playerCoords - vector3(pos_x, pos_y, pos_z)) > Config.PropPlacementMaxDistance then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_86')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_86')})
         return
     end
 
     -- Re-check the item is still present (placement preview takes a moment client-side)
     local hasItem = Player.Functions.GetItemByName(Config.ChickenCoopItem)
     if not hasItem or hasItem.amount < 1 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_87')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_87')})
         return
     end
 
     local ranchid = Player.PlayerData.job.name
     local coopid = CreateChickenCoopId()
     if not coopid then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_88')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_88')})
         return
     end
 
     -- Take the item first and check it actually came off
     local itemRemoved = exports['rsg-inventory']:RemoveItem(src, Config.ChickenCoopItem, 1, nil, 'rsg-ranch')
     if not itemRemoved then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_89')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_89')})
         return
     end
 
@@ -1923,7 +1922,7 @@ RegisterNetEvent('rsg-ranch:server:placeChickenCoop', function(pos_x, pos_y, pos
         if Config.Debug then
             print('^1[ERROR]^7 Failed to insert chicken coop: ' .. tostring(insertResult))
         end
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_90')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_90')})
         return
     end
 
@@ -1940,7 +1939,7 @@ RegisterNetEvent('rsg-ranch:server:placeChickenCoop', function(pos_x, pos_y, pos
 
     -- Broadcast to everyone so nearby clients can see it immediately
     TriggerClientEvent('rsg-ranch:client:spawnChickenCoop', -1, coopData)
-    TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('sv_server_description_91')})
+    TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'success', description = locale('sv_server_description_91')})
 
     if Config.Debug then
         print('^2[CHICKENCOOP]^7 Player ' .. src .. ' placed chicken coop ' .. coopid .. ' at ranch ' .. ranchid)
@@ -1969,7 +1968,7 @@ RegisterNetEvent('rsg-ranch:server:refreshChickenCoops', function()
     end
 end)
 
--- Live status for the "Check Coop" ox_target option
+-- Live status for the "Check Coop" rsg-target option
 RSGCore.Functions.CreateCallback('rsg-ranch:server:getChickenCoopStatus', function(source, cb, coopid)
     local Player = RSGCore.Functions.GetPlayer(source)
     if not Player or not isPlayerRanchStaff(Player) then cb(nil) return end
@@ -1995,7 +1994,7 @@ RegisterNetEvent('rsg-ranch:server:buyChicken', function(coopid)
     local Player = RSGCore.Functions.GetPlayer(src)
 
     if not Player or not isPlayerRanchStaff(Player) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_92')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_92')})
         return
     end
     if not RanchCan(Player, 'canBuy') then return DenyPermission(src) end
@@ -2004,31 +2003,31 @@ RegisterNetEvent('rsg-ranch:server:buyChicken', function(coopid)
 
     local coopRows = MySQL.query.await('SELECT coopid, ranchid, pos_x, pos_y, pos_z, chickens, eggs_stored, last_production FROM rsg_ranch_chickencoops WHERE coopid = ?', {coopid})
     if not coopRows or #coopRows == 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_93')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_93')})
         return
     end
     local coop = coopRows[1]
 
     if coop.ranchid ~= Player.PlayerData.job.name then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_94')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_94')})
         return
     end
 
     local playerCoords = GetEntityCoords(GetPlayerPed(src))
     local coopVec = vector3(coop.pos_x, coop.pos_y, coop.pos_z)
     if #(playerCoords - coopVec) > (Config.ChickenCoopInteractDistance + 3.0) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_95')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_95')})
         return
     end
 
     if (coop.chickens or 0) >= (Config.MaxChickensPerCoop or 20) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_96')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_96')})
         return
     end
 
     local price = Config.ChickenBuyPrice or 15
     if (Player.PlayerData.money.cash or 0) < price then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_97')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_97')})
         return
     end
 
@@ -2039,7 +2038,7 @@ RegisterNetEvent('rsg-ranch:server:buyChicken', function(coopid)
 
     local moneyRemoved = Player.Functions.RemoveMoney('cash', price, 'bought-chicken')
     if not moneyRemoved then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_98')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_98')})
         return
     end
 
@@ -2051,12 +2050,12 @@ RegisterNetEvent('rsg-ranch:server:buyChicken', function(coopid)
     })
     if not updated or updated <= 0 then
         Player.Functions.AddMoney('cash', price, 'bought-chicken-refund')
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_152')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_152')})
         return
     end
 
     TriggerClientEvent('rsg-ranch:client:updateChickenCoop', -1, coopid, newChickenCount)
-    TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('sv_server_description_99'):format(newChickenCount, Config.MaxChickensPerCoop)})
+    TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'success', description = locale('sv_server_description_99'):format(newChickenCount, Config.MaxChickensPerCoop)})
 
     if Config.Debug then
         print('^2[CHICKENCOOP]^7 Player ' .. src .. ' bought a chicken for coop ' .. coopid .. ' (now ' .. newChickenCount .. ')')
@@ -2069,7 +2068,7 @@ RegisterNetEvent('rsg-ranch:server:collectEggs', function(coopid)
     local Player = RSGCore.Functions.GetPlayer(src)
 
     if not Player or not isPlayerRanchStaff(Player) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_100')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_100')})
         return
     end
     if not RanchCan(Player, 'canCollectProducts') then return DenyPermission(src) end
@@ -2078,31 +2077,31 @@ RegisterNetEvent('rsg-ranch:server:collectEggs', function(coopid)
 
     local coopRows = MySQL.query.await('SELECT coopid, ranchid, pos_x, pos_y, pos_z, chickens, eggs_stored, last_production FROM rsg_ranch_chickencoops WHERE coopid = ?', {coopid})
     if not coopRows or #coopRows == 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_101')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_101')})
         return
     end
     local coop = coopRows[1]
 
     if coop.ranchid ~= Player.PlayerData.job.name then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_102')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_102')})
         return
     end
 
     local playerCoords = GetEntityCoords(GetPlayerPed(src))
     local coopVec = vector3(coop.pos_x, coop.pos_y, coop.pos_z)
     if #(playerCoords - coopVec) > (Config.ChickenCoopInteractDistance + 3.0) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_103')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_103')})
         return
     end
 
     local eggsReady = RollChickenCoopEggs(coop)
     if eggsReady <= 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'inform', description = locale('sv_server_description_104')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'inform', description = locale('sv_server_description_104')})
         return
     end
 
     if not exports['rsg-inventory']:CanAddItem(src, Config.EggItem, eggsReady) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_105')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_105')})
         return
     end
 
@@ -2112,18 +2111,18 @@ RegisterNetEvent('rsg-ranch:server:collectEggs', function(coopid)
         os.time(), coopid, coop.last_production, coop.eggs_stored or 0
     })
     if not claimed or claimed <= 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'inform', description = locale('sv_server_description_104')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'inform', description = locale('sv_server_description_104')})
         return
     end
 
     if not exports['rsg-inventory']:AddItem(src, Config.EggItem, eggsReady, nil, nil, 'rsg-ranch') then
         MySQL.update('UPDATE rsg_ranch_chickencoops SET eggs_stored = ? WHERE coopid = ?', {eggsReady, coopid})
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_105')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_105')})
         return
     end
 
 
-    TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('sv_server_description_106'):format(eggsReady)})
+    TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'success', description = locale('sv_server_description_106'):format(eggsReady)})
 
     if Config.Debug then
         print('^2[CHICKENCOOP]^7 Player ' .. src .. ' collected ' .. eggsReady .. ' egg(s) from coop ' .. coopid)
@@ -2136,7 +2135,7 @@ RegisterNetEvent('rsg-ranch:server:deleteChickenCoop', function(coopid)
     local Player = RSGCore.Functions.GetPlayer(src)
 
     if not Player or not isPlayerRanchStaff(Player) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_107')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_107')})
         return
     end
     if not RanchCan(Player, 'canManageProps') then return DenyPermission(src) end
@@ -2145,26 +2144,26 @@ RegisterNetEvent('rsg-ranch:server:deleteChickenCoop', function(coopid)
 
     local coopRows = MySQL.query.await('SELECT coopid, ranchid, pos_x, pos_y, pos_z FROM rsg_ranch_chickencoops WHERE coopid = ?', {coopid})
     if not coopRows or #coopRows == 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_108')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_108')})
         return
     end
     local coop = coopRows[1]
 
     if coop.ranchid ~= Player.PlayerData.job.name then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_109')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_109')})
         return
     end
 
     local playerCoords = GetEntityCoords(GetPlayerPed(src))
     local coopVec = vector3(coop.pos_x, coop.pos_y, coop.pos_z)
     if #(playerCoords - coopVec) > (Config.ChickenCoopInteractDistance + 3.0) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_110')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_110')})
         return
     end
 
     MySQL.query.await('DELETE FROM rsg_ranch_chickencoops WHERE coopid = ?', {coopid})
     TriggerClientEvent('rsg-ranch:client:removeChickenCoop', -1, coopid)
-    TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('sv_server_description_111')})
+    TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'success', description = locale('sv_server_description_111')})
 
     if Config.Debug then
         print('^2[CHICKENCOOP]^7 Player ' .. src .. ' deleted chicken coop ' .. coopid)
@@ -2179,7 +2178,7 @@ RegisterNetEvent('rsg-ranch:server:feedChickenCoop', function(coopid)
     local Player = RSGCore.Functions.GetPlayer(src)
 
     if not Player or not isPlayerRanchStaff(Player) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_112')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_112')})
         return
     end
 
@@ -2187,31 +2186,31 @@ RegisterNetEvent('rsg-ranch:server:feedChickenCoop', function(coopid)
 
     local hasItem = Player.Functions.GetItemByName(Config.FeedBagItem)
     if not hasItem or hasItem.amount < 1 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_113')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_113')})
         return
     end
 
     local coopRows = MySQL.query.await('SELECT coopid, ranchid, pos_x, pos_y, pos_z, chickens, eggs_stored, feed_level, last_feed_update FROM rsg_ranch_chickencoops WHERE coopid = ?', {coopid})
     if not coopRows or #coopRows == 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_114')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_114')})
         return
     end
     local coop = coopRows[1]
 
     if coop.ranchid ~= Player.PlayerData.job.name then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_115')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_115')})
         return
     end
 
     local playerCoords = GetEntityCoords(GetPlayerPed(src))
     local coopVec = vector3(coop.pos_x, coop.pos_y, coop.pos_z)
     if #(playerCoords - coopVec) > (Config.ChickenCoopInteractDistance + 3.0) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_116')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_116')})
         return
     end
 
     if (coop.chickens or 0) <= 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_117')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_117')})
         return
     end
 
@@ -2228,7 +2227,7 @@ RegisterNetEvent('rsg-ranch:server:feedChickenCoop', function(coopid)
             TriggerClientEvent('rsg-ranch:client:updateChickenCoop', -1, coopid, 0)
         end
 
-        TriggerClientEvent('ox_lib:notify', src, {
+        TriggerClientEvent('RSGCore:Client:Notify', src, {
             type = 'error',
             description = locale('sv_server_description_118')
         })
@@ -2243,14 +2242,14 @@ RegisterNetEvent('rsg-ranch:server:feedChickenCoop', function(coopid)
         -- Persist the decay roll even though we're not adding feed, so the clock
         -- doesn't run further behind next time this coop is checked
         MySQL.update('UPDATE rsg_ranch_chickencoops SET feed_level = ?, last_feed_update = ? WHERE coopid = ?', {rolledFeedLevel, os.time(), coopid})
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_119')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_119')})
         return
     end
 
     local newFeedLevel = math.min(maxFeed, rolledFeedLevel + (Config.ChickenCoopFeedPerBag or 50))
 
     if not exports['rsg-inventory']:RemoveItem(src, Config.FeedBagItem, 1, nil, 'rsg-ranch') then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_113')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_113')})
         return
     end
 
@@ -2260,12 +2259,12 @@ RegisterNetEvent('rsg-ranch:server:feedChickenCoop', function(coopid)
 
     if not updateSuccess or not rowsAffected or rowsAffected <= 0 then
         exports['rsg-inventory']:AddItem(src, Config.FeedBagItem, 1, nil, nil, 'rsg-ranch')
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_120')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_120')})
         return
     end
 
 
-    TriggerClientEvent('ox_lib:notify', src, {
+    TriggerClientEvent('RSGCore:Client:Notify', src, {
         type = 'success',
         description = locale('sv_server_description_121'):format(newFeedLevel, maxFeed)
     })
@@ -2567,14 +2566,14 @@ RegisterNetEvent('rsg-ranch:server:respawnAnimal', function(animalId)
 
     local now = os.time()
     if respawnCooldown[src] and now - respawnCooldown[src] < 10 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_respawn_cooldown')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_respawn_cooldown')})
         return
     end
     respawnCooldown[src] = now
 
     local row = MySQL.single.await('SELECT ranchid FROM rsg_ranch_animals WHERE animalid = ?', {animalId})
     if not row or row.ranchid ~= Player.PlayerData.job.name then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_123')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_123')})
         return
     end
 
@@ -2586,7 +2585,7 @@ RegisterNetEvent('rsg-ranch:server:respawnAnimal', function(animalId)
     SpawnController.activeSpawns[animalId] = nil
 
     TriggerClientEvent('rsg-ranch:client:forceRespawnAnimal', -1, animalId)
-    TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('sv_respawn_done')})
+    TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'success', description = locale('sv_respawn_done')})
 end)
 
 AddEventHandler('playerDropped', function() respawnCooldown[source] = nil end)
@@ -2646,7 +2645,7 @@ RegisterNetEvent('rsg-ranch:server:collectProduct', function(animalid)
 
     -- Validate player is ranch staff
     if not Player or not isPlayerRanchStaff(Player) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_122')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_122')})
         return
     end
     if not RanchCan(Player, 'canCollectProducts') then return DenyPermission(src) end
@@ -2662,36 +2661,36 @@ RegisterNetEvent('rsg-ranch:server:collectProduct', function(animalid)
 
     local result = MySQL.query.await('SELECT model, product_ready, ranchid, pos_x, pos_y, pos_z FROM rsg_ranch_animals WHERE animalid = ?', {animalid})
     if not result or #result == 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_123')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_123')})
         return
     end
 
     local animal = result[1]
 
     if animal.ranchid ~= Player.PlayerData.job.name then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_124')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_124')})
         return
     end
 
     local animalVec = vector3(animal.pos_x, animal.pos_y, animal.pos_z)
     if #(playerCoords - animalVec) > Config.AnimalInteractionDistance then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_125')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_125')})
         return
     end
 
     if not animal.product_ready or animal.product_ready == 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_126')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_126')})
         return
     end
 
     local productConfig = Config.AnimalProducts[animal.model]
     if not productConfig then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_127')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_127')})
         return
     end
 
     if not exports['rsg-inventory']:CanAddItem(src, productConfig.product, productConfig.amount) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_130')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_130')})
         return
     end
 
@@ -2701,20 +2700,20 @@ RegisterNetEvent('rsg-ranch:server:collectProduct', function(animalid)
     -- letting a spammed event collect the same product several times).
     local claimed = MySQL.update.await('UPDATE rsg_ranch_animals SET product_ready = 0 WHERE animalid = ? AND product_ready = 1', {animalid})
     if not claimed or claimed <= 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_126')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_126')})
         return
     end
 
     if not exports['rsg-inventory']:AddItem(src, productConfig.product, productConfig.amount, nil, nil, 'rsg-ranch') then
         -- give the product back to the animal rather than losing it
         MySQL.update('UPDATE rsg_ranch_animals SET product_ready = 1 WHERE animalid = ?', {animalid})
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_130')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_130')})
         return
     end
 
     local itemData = RSGCore.Shared.Items[productConfig.product]
 
-    TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('sv_server_description_128'):format(productConfig.amount, itemData and itemData.label or productConfig.product)})
+    TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'success', description = locale('sv_server_description_128'):format(productConfig.amount, itemData and itemData.label or productConfig.product)})
     TriggerClientEvent('rsg-ranch:client:refreshSingleAnimal', -1, animalid, {product_ready = 0})
 
     if Config.Debug then
@@ -2737,7 +2736,7 @@ RegisterNetEvent('rsg-ranch:server:sendAnimalToFeed', function(animalid, feedtro
     local Player = RSGCore.Functions.GetPlayer(src)
 
     if not Player or not isPlayerRanchStaff(Player) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_301')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_301')})
         return
     end
 
@@ -2747,20 +2746,20 @@ RegisterNetEvent('rsg-ranch:server:sendAnimalToFeed', function(animalid, feedtro
 
     local animalRows = MySQL.query.await('SELECT animalid, hunger, ranchid, pos_x, pos_y, pos_z FROM rsg_ranch_animals WHERE animalid = ?', {animalid})
     if not animalRows or #animalRows == 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_302')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_302')})
         return
     end
     local animal = animalRows[1]
 
     if animal.ranchid ~= Player.PlayerData.job.name then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_303')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_303')})
         return
     end
 
 
     local troughRows = MySQL.query.await('SELECT feedtroughid, ranchid, uses, pos_x, pos_y, pos_z FROM rsg_ranch_feedtroughs WHERE feedtroughid = ?', {feedtroughid})
     if not troughRows or #troughRows == 0 or troughRows[1].ranchid ~= animal.ranchid then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_305')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_305')})
         return
     end
     local trough = troughRows[1]
@@ -2776,12 +2775,12 @@ RegisterNetEvent('rsg-ranch:server:sendAnimalToFeed', function(animalid, feedtro
     local nearAnimal = #(playerCoords - animalVec) <= Config.AnimalInteractionDistance
     local nearTrough = #(playerCoords - troughVec) <= (searchRadius + Config.AnimalInteractionDistance)
     if not nearAnimal and not nearTrough then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_304')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_304')})
         return
     end
 
     if (trough.uses or 0) <= 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_306')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_306')})
         return
     end
 
@@ -2801,13 +2800,13 @@ RegisterNetEvent('rsg-ranch:server:sendAnimalToFeed', function(animalid, feedtro
     end
 
     if not updateSuccess then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_305')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_305')})
         return
     end
 
     TriggerClientEvent('rsg-ranch:client:updateFeedTroughUses', -1, feedtroughid, newUses)
     TriggerClientEvent('rsg-ranch:client:refreshSingleAnimal', -1, animalid, { hunger = newHunger })
-    TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('sv_server_description_307'):format(newHunger)})
+    TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'success', description = locale('sv_server_description_307'):format(newHunger)})
 
     if Config.Debug then
         print('^2[FEEDTROUGH]^7 Player ' .. src .. ' sent animal ' .. animalid .. ' to feed trough ' .. feedtroughid .. ' - hunger now ' .. newHunger)
@@ -2819,7 +2818,7 @@ RegisterNetEvent('rsg-ranch:server:sendAnimalToWater', function(animalid, watert
     local Player = RSGCore.Functions.GetPlayer(src)
 
     if not Player or not isPlayerRanchStaff(Player) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_301')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_301')})
         return
     end
 
@@ -2829,20 +2828,20 @@ RegisterNetEvent('rsg-ranch:server:sendAnimalToWater', function(animalid, watert
 
     local animalRows = MySQL.query.await('SELECT animalid, thirst, ranchid, pos_x, pos_y, pos_z FROM rsg_ranch_animals WHERE animalid = ?', {animalid})
     if not animalRows or #animalRows == 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_302')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_302')})
         return
     end
     local animal = animalRows[1]
 
     if animal.ranchid ~= Player.PlayerData.job.name then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_303')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_303')})
         return
     end
 
 
     local troughRows = MySQL.query.await('SELECT watertroughid, ranchid, uses, pos_x, pos_y, pos_z FROM rsg_ranch_watertroughs WHERE watertroughid = ?', {watertroughid})
     if not troughRows or #troughRows == 0 or troughRows[1].ranchid ~= animal.ranchid then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_308')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_308')})
         return
     end
     local trough = troughRows[1]
@@ -2858,12 +2857,12 @@ RegisterNetEvent('rsg-ranch:server:sendAnimalToWater', function(animalid, watert
     local nearAnimal = #(playerCoords - animalVec) <= Config.AnimalInteractionDistance
     local nearTrough = #(playerCoords - troughVec) <= (searchRadius + Config.AnimalInteractionDistance)
     if not nearAnimal and not nearTrough then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_304')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_304')})
         return
     end
 
     if (trough.uses or 0) <= 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_309')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_309')})
         return
     end
 
@@ -2883,13 +2882,13 @@ RegisterNetEvent('rsg-ranch:server:sendAnimalToWater', function(animalid, watert
     end
 
     if not updateSuccess then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_308')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_308')})
         return
     end
 
     TriggerClientEvent('rsg-ranch:client:updateWaterTroughUses', -1, watertroughid, newUses)
     TriggerClientEvent('rsg-ranch:client:refreshSingleAnimal', -1, animalid, { thirst = newThirst })
-    TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('sv_server_description_310'):format(newThirst)})
+    TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'success', description = locale('sv_server_description_310'):format(newThirst)})
 
     if Config.Debug then
         print('^2[WATERTROUGH]^7 Player ' .. src .. ' sent animal ' .. animalid .. ' to water trough ' .. watertroughid .. ' - thirst now ' .. newThirst)
@@ -3479,19 +3478,19 @@ RegisterNetEvent('rsg-ranch:server:sellAnimal', function(animalid)
     local Player = RSGCore.Functions.GetPlayer(src)
 
     if not Player then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_135')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_135')})
         return
     end
 
     -- Verify player is ranch staff
     if not isPlayerRanchStaff(Player) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_136')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_136')})
         return
     end
     if not RanchCan(Player, 'canSell') then return DenyPermission(src) end
 
     if not animalid then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_137')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_137')})
         return
     end
 
@@ -3499,7 +3498,7 @@ RegisterNetEvent('rsg-ranch:server:sellAnimal', function(animalid)
     local animalResult = MySQL.query.await('SELECT animalid, ranchid, age, model, pos_x, pos_y, pos_z FROM rsg_ranch_animals WHERE animalid = ?', {animalid})
 
     if not animalResult or #animalResult == 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_138')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_138')})
         if Config.Debug then
             print('^1[SELL ANIMAL ERROR]^7 Animal ' .. animalid .. ' not found in database')
         end
@@ -3510,7 +3509,7 @@ RegisterNetEvent('rsg-ranch:server:sellAnimal', function(animalid)
 
     -- Verify the animal actually belongs to the ranch the player works for
     if animal.ranchid ~= Player.PlayerData.job.name then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_139')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_139')})
         if Config.Debug then
             print('^1[SELL ANIMAL EXPLOIT?]^7 Player ' .. src .. ' (' .. Player.PlayerData.job.name .. ') tried to sell animal ' .. animalid .. ' belonging to ranch ' .. tostring(animal.ranchid))
         end
@@ -3519,7 +3518,7 @@ RegisterNetEvent('rsg-ranch:server:sellAnimal', function(animalid)
 
     -- Verify animal is old enough to sell
     if animal.age < Config.MinAgeToSell then
-        TriggerClientEvent('ox_lib:notify', src, {
+        TriggerClientEvent('RSGCore:Client:Notify', src, {
             type = 'error',
             description = locale('sv_server_description_140'):format(Config.MinAgeToSell)
         })
@@ -3530,7 +3529,7 @@ RegisterNetEvent('rsg-ranch:server:sellAnimal', function(animalid)
     local playerCoords = GetEntityCoords(GetPlayerPed(src))
     local salePoint = FindNearestSalePoint(playerCoords, Config.SalePointInteractionDistance)
     if not salePoint then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_141')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_141')})
         return
     end
 
@@ -3539,7 +3538,7 @@ RegisterNetEvent('rsg-ranch:server:sellAnimal', function(animalid)
         local animalVec = vector3(animal.pos_x, animal.pos_y, animal.pos_z)
         local distance = #(salePoint.coords - animalVec)
         if distance > Config.AnimalSaleDistance then
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_142')})
+            TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_142')})
             return
         end
     end
@@ -3553,7 +3552,7 @@ RegisterNetEvent('rsg-ranch:server:sellAnimal', function(animalid)
     end)
     
     if not deleteSuccess or not deleteError or deleteError == 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_143')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_143')})
         if Config.Debug then
             print('^1[SELL ANIMAL ERROR]^7 Failed to delete animal ' .. animalid .. ' from database')
         end
@@ -3564,7 +3563,7 @@ RegisterNetEvent('rsg-ranch:server:sellAnimal', function(animalid)
     Player.Functions.AddMoney('cash', salePrice, 'rsg-ranch-animal-sale')
     
     -- Notify player
-    TriggerClientEvent('ox_lib:notify', src, {
+    TriggerClientEvent('RSGCore:Client:Notify', src, {
         type = 'success',
         description = locale('sv_server_description_144'):format(AnimalLabelForModel(animal.model), salePrice)
     })
@@ -3584,19 +3583,19 @@ local function HandleSellAllAnimals(src, animalIds)
     local Player = RSGCore.Functions.GetPlayer(src)
 
     if not Player then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_145')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_145')})
         return
     end
 
     -- Verify player is ranch staff
     if not isPlayerRanchStaff(Player) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_146')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_146')})
         return
     end
     if not RanchCan(Player, 'canSell') then return DenyPermission(src) end
 
     if type(animalIds) ~= 'table' or #animalIds == 0 or #animalIds > (Config.MaxRanchAnimals or 100) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_147')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_147')})
         return
     end
 
@@ -3604,7 +3603,7 @@ local function HandleSellAllAnimals(src, animalIds)
     local playerCoords = GetEntityCoords(GetPlayerPed(src))
     local salePoint = FindNearestSalePoint(playerCoords, Config.SalePointInteractionDistance)
     if not salePoint then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_148')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_148')})
         return
     end
 
@@ -3650,17 +3649,17 @@ local function HandleSellAllAnimals(src, animalIds)
     
     -- Notify player
     if successCount == #animalIds then
-        TriggerClientEvent('ox_lib:notify', src, {
+        TriggerClientEvent('RSGCore:Client:Notify', src, {
             type = 'success',
             description = locale('sv_server_description_149'):format(successCount, totalValue)
         })
     elseif successCount > 0 then
-        TriggerClientEvent('ox_lib:notify', src, {
+        TriggerClientEvent('RSGCore:Client:Notify', src, {
             type = 'warning',
             description = locale('sv_server_description_150'):format(successCount, #animalIds, totalValue)
         })
     else
-        TriggerClientEvent('ox_lib:notify', src, {
+        TriggerClientEvent('RSGCore:Client:Notify', src, {
             type = 'error',
             description = locale('sv_server_description_151')
         })
@@ -3678,7 +3677,7 @@ end
 RegisterNetEvent('rsg-ranch:server:sellAllAnimals', function(animalIds)
     local src = source
     if not RanchWithLock('sellall:' .. tostring(src), function() HandleSellAllAnimals(src, animalIds) end) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_152')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_152')})
     end
 end)
 
@@ -3693,7 +3692,7 @@ RegisterNetEvent('rsg-ranch:server:buyAnimal', function(purchaseData)
     -- checks below on the same starting balance before any of them actually
     -- deducts money (classic time-of-check/time-of-use dupe).
     if BuyAnimalLocks[src] then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_152')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_152')})
         return
     end
     BuyAnimalLocks[src] = true
@@ -3702,20 +3701,20 @@ RegisterNetEvent('rsg-ranch:server:buyAnimal', function(purchaseData)
         local Player = RSGCore.Functions.GetPlayer(src)
 
         if not Player then
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_153')})
+            TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_153')})
             return
         end
 
         -- Verify player is ranch staff
         if not isPlayerRanchStaff(Player) then
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_154')})
+            TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_154')})
             return
         end
         if not RanchCan(Player, 'canBuy') then return DenyPermission(src) end
 
         -- Validate purchase data
         if not purchaseData or not purchaseData.animalType or not purchaseData.ranchid then
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_155')})
+            TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_155')})
             if Config.Debug then
                 print('^1[BUY ANIMAL ERROR]^7 Invalid purchase data from player ' .. src)
             end
@@ -3724,7 +3723,7 @@ RegisterNetEvent('rsg-ranch:server:buyAnimal', function(purchaseData)
 
         -- A player can only buy animals for the ranch they actually work for
         if purchaseData.ranchid ~= Player.PlayerData.job.name then
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_156')})
+            TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_156')})
             return
         end
 
@@ -3732,14 +3731,14 @@ RegisterNetEvent('rsg-ranch:server:buyAnimal', function(purchaseData)
         local playerCoords = GetEntityCoords(GetPlayerPed(src))
         local buyPoint = FindNearestBuyPoint(playerCoords, Config.BuyPointInteractionDistance)
         if not buyPoint then
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_157')})
+            TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_157')})
             return
         end
 
         -- Recompute the purchase price server-side - never trust a client-supplied price
         local price = CalculateAnimalBuyPrice(purchaseData.animalType)
         if not price then
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_158')})
+            TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_158')})
             return
         end
 
@@ -3760,7 +3759,7 @@ RegisterNetEvent('rsg-ranch:server:buyAnimal', function(purchaseData)
         if wantsDelivery then
             ranchLocationData = GetRanchLocationData(purchaseData.ranchid)
             if not ranchLocationData or not ranchLocationData.spawnpoint then
-                TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_159')})
+                TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_159')})
                 return
             end
             price = price + (Config.LivestockDeliveryPrice or 0)
@@ -3773,7 +3772,7 @@ RegisterNetEvent('rsg-ranch:server:buyAnimal', function(purchaseData)
         -- read can go stale across the awaited queries further down.
         local playerMoney = Player.PlayerData.money.cash
         if playerMoney < purchaseData.price then
-            TriggerClientEvent('ox_lib:notify', src, {
+            TriggerClientEvent('RSGCore:Client:Notify', src, {
                 type = 'error',
                 description = locale('sv_server_description_160'):format(purchaseData.price, playerMoney)
             })
@@ -3783,7 +3782,7 @@ RegisterNetEvent('rsg-ranch:server:buyAnimal', function(purchaseData)
         -- Check animal count for the ranch
         local countResult = MySQL.query.await('SELECT COUNT(*) as count FROM rsg_ranch_animals WHERE ranchid = ?', {purchaseData.ranchid})
         if not countResult or not countResult[1] then
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_161')})
+            TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_161')})
             if Config.Debug then
                 print('^1[BUY ANIMAL ERROR]^7 Failed to count animals for ranch ' .. purchaseData.ranchid)
             end
@@ -3792,7 +3791,7 @@ RegisterNetEvent('rsg-ranch:server:buyAnimal', function(purchaseData)
 
         local currentCount = countResult[1].count or 0
         if currentCount >= Config.MaxRanchAnimals then
-            TriggerClientEvent('ox_lib:notify', src, {
+            TriggerClientEvent('RSGCore:Client:Notify', src, {
                 type = 'error',
                 description = locale('sv_server_description_162'):format(Config.MaxRanchAnimals)
             })
@@ -3802,7 +3801,7 @@ RegisterNetEvent('rsg-ranch:server:buyAnimal', function(purchaseData)
         -- Create unique animal ID
         local animalid = CreateAnimalId()
         if not animalid then
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_163')})
+            TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_163')})
             if Config.Debug then
                 print('^1[BUY ANIMAL ERROR]^7 Failed to create unique animal ID for player ' .. src)
             end
@@ -3841,7 +3840,7 @@ RegisterNetEvent('rsg-ranch:server:buyAnimal', function(purchaseData)
         -- becomes final; nothing between here and the insert below can race it.
         local moneyRemoved = Player.Functions.RemoveMoney('cash', purchaseData.price, 'rsg-ranch-buy-animal')
         if not moneyRemoved then
-            TriggerClientEvent('ox_lib:notify', src, {
+            TriggerClientEvent('RSGCore:Client:Notify', src, {
                 type = 'error',
                 description = locale('sv_server_description_164'):format(purchaseData.price, Player.PlayerData.money.cash)
             })
@@ -3875,7 +3874,7 @@ RegisterNetEvent('rsg-ranch:server:buyAnimal', function(purchaseData)
             -- The database insert failed after money was already taken - refund it
             -- rather than leaving the player out of pocket with nothing to show for it.
             Player.Functions.AddMoney('cash', purchaseData.price, 'rsg-ranch-buy-animal-refund')
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_165')})
+            TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_165')})
             if Config.Debug then
                 print('^1[BUY ANIMAL ERROR]^7 Database insert failed: ' .. tostring(insertResult))
             end
@@ -3883,13 +3882,13 @@ RegisterNetEvent('rsg-ranch:server:buyAnimal', function(purchaseData)
         end
 
         -- Notify player of successful purchase
-        TriggerClientEvent('ox_lib:notify', src, {
+        TriggerClientEvent('RSGCore:Client:Notify', src, {
             type = 'success',
             description = locale('sv_server_description_166'):format(AnimalLabelForModel(purchaseData.animalType), purchaseData.price, (wantsDelivery and locale('sv_server_delivered_suffix') or '!'))
         })
 
         if Config.ServerNotify then
-            TriggerClientEvent('ox_lib:notify', src, {
+            TriggerClientEvent('RSGCore:Client:Notify', src, {
                 type = 'inform',
                 description = locale('sv_server_description_167'):format(buyPoint.blipname or locale('sv_server_livestock_dealer'))
             })
@@ -3909,7 +3908,7 @@ RegisterNetEvent('rsg-ranch:server:buyAnimal', function(purchaseData)
     BuyAnimalLocks[src] = nil
 
     if not ok then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_168')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_168')})
         if Config.Debug then
             print('^1[BUY ANIMAL ERROR]^7 Unhandled error: ' .. tostring(handlerError))
         end
@@ -3960,12 +3959,12 @@ local function HandlePurchaseRanch(src, ranchid)
     local Player = RSGCore.Functions.GetPlayer(src)
 
     if not Player then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_169')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_169')})
         return
     end
 
     if type(ranchid) ~= 'string' then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_170')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_170')})
         return
     end
 
@@ -3979,7 +3978,7 @@ local function HandlePurchaseRanch(src, ranchid)
     end
 
     if not ranchData then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_171')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_171')})
         return
     end
 
@@ -3988,12 +3987,12 @@ local function HandlePurchaseRanch(src, ranchid)
     -- need to guard against someone who is already this ranch's boss buying
     -- it again.
     if Player.PlayerData.job.name == ranchData.jobaccess and Player.PlayerData.job.grade.level >= Config.RanchBossGrade then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_172')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_172')})
         return
     end
 
     if RanchOwners[ranchid] then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_173')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_173')})
         return
     end
 
@@ -4001,7 +4000,7 @@ local function HandlePurchaseRanch(src, ranchid)
     -- job for the first and leave it owned but unmanageable
     for _, ownerCid in pairs(RanchOwners) do
         if ownerCid == Player.PlayerData.citizenid then
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_already_own_ranch')})
+            TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_already_own_ranch')})
             return
         end
     end
@@ -4010,20 +4009,20 @@ local function HandlePurchaseRanch(src, ranchid)
     local playerCoords = GetEntityCoords(GetPlayerPed(src))
     local npcCoords = vector3(ranchData.npccoords.x, ranchData.npccoords.y, ranchData.npccoords.z)
     if #(playerCoords - npcCoords) > Config.RanchPurchaseDistance then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_174')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_174')})
         return
     end
 
     -- Recompute price server-side - never trust a client-supplied price
     local price = ranchData.price
     if not price then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_175')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_175')})
         return
     end
 
     local playerMoney = Player.PlayerData.money.cash
     if playerMoney < price then
-        TriggerClientEvent('ox_lib:notify', src, {
+        TriggerClientEvent('RSGCore:Client:Notify', src, {
             type = 'error',
             description = locale('sv_server_description_176'):format(price, playerMoney)
         })
@@ -4032,18 +4031,18 @@ local function HandlePurchaseRanch(src, ranchid)
 
     -- Re-check for a race between two players buying at the same instant
     if RanchOwners[ranchid] then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_177')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_177')})
         return
     end
 
     -- Deduct money now, atomically, and check it actually succeeded before granting
     -- the ranch - the balance check above can go stale across the awaited
     -- queries here, so this is the real point of no return.
-    -- Register the ranch job with rsg-multijob first; it refuses if the player
+    -- Register the ranch job in the rsg-core multijob list first; it refuses if the player
     -- already holds the maximum number of jobs.
     local jobAdded, jobReason = MultijobAddJob(Player.PlayerData.citizenid, ranchid, Config.RanchBossGrade)
     if not jobAdded then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_213')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_213')})
         if Config.Debug then print('^1[RANCH PURCHASE]^7 multijob AddJob refused: ' .. tostring(jobReason)) end
         return
     end
@@ -4051,7 +4050,7 @@ local function HandlePurchaseRanch(src, ranchid)
     local moneyRemoved = Player.Functions.RemoveMoney('cash', price, 'rsg-ranch-purchase')
     if not moneyRemoved then
         MultijobRemoveJob(Player.PlayerData.citizenid, ranchid)
-        TriggerClientEvent('ox_lib:notify', src, {
+        TriggerClientEvent('RSGCore:Client:Notify', src, {
             type = 'error',
             description = locale('sv_server_description_178'):format(price, Player.PlayerData.money.cash)
         })
@@ -4070,7 +4069,7 @@ local function HandlePurchaseRanch(src, ranchid)
         -- The database insert failed after money was already taken - refund it
         Player.Functions.AddMoney('cash', price, 'rsg-ranch-purchase-refund')
         MultijobRemoveJob(Player.PlayerData.citizenid, ranchid)
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_179')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_179')})
         if Config.Debug then
             print('^1[RANCH PURCHASE ERROR]^7 Database insert failed: ' .. tostring(dbError))
         end
@@ -4084,13 +4083,13 @@ local function HandlePurchaseRanch(src, ranchid)
 
     EnsureGeneralStorage(ranchid)
 
-    TriggerClientEvent('ox_lib:notify', src, {
+    TriggerClientEvent('RSGCore:Client:Notify', src, {
         type = 'success',
         description = locale('sv_server_description_180'):format(ranchData.name, price)
     })
 
     if Config.ServerNotify then
-        TriggerClientEvent('ox_lib:notify', -1, {
+        TriggerClientEvent('RSGCore:Client:Notify', -1, {
             type = 'inform',
             description = locale('sv_server_description_181'):format(ranchData.name)
         })
@@ -4105,11 +4104,11 @@ RegisterNetEvent('rsg-ranch:server:purchaseRanch', function(ranchid)
     local src = source
     local ok = RanchWithLock('ranchbuyer:' .. tostring(src), function()
         if not RanchWithLock('ranch:' .. tostring(ranchid), function() HandlePurchaseRanch(src, ranchid) end) then
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_152')})
+            TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_152')})
         end
     end)
     if not ok then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_152')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_152')})
     end
 end)
 
@@ -4120,12 +4119,12 @@ local function HandleTransferRanch(src, ranchid, targetId)
     local Player = RSGCore.Functions.GetPlayer(src)
 
     if not Player then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_182')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_182')})
         return
     end
 
     if type(ranchid) ~= 'string' then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_183')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_183')})
         return
     end
 
@@ -4139,30 +4138,30 @@ local function HandleTransferRanch(src, ranchid, targetId)
     end
 
     if not ranchData then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_184')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_184')})
         return
     end
 
     -- Must be the current boss of this ranch
     if Player.PlayerData.job.name ~= ranchid or Player.PlayerData.job.grade.level < Config.RanchBossGrade then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_185')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_185')})
         return
     end
 
     if RanchOwners[ranchid] ~= Player.PlayerData.citizenid then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_186')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_186')})
         return
     end
 
     targetId = tonumber(targetId)
     local Target = targetId and RSGCore.Functions.GetPlayer(targetId)
     if not Target then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_187')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_187')})
         return
     end
 
     if Target.PlayerData.citizenid == Player.PlayerData.citizenid then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_188')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_188')})
         return
     end
 
@@ -4170,14 +4169,14 @@ local function HandleTransferRanch(src, ranchid, targetId)
     local ownerPed = GetPlayerPed(src)
     local targetPed = GetPlayerPed(targetId)
     if not ownerPed or not targetPed or ownerPed == 0 or targetPed == 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_189')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_189')})
         return
     end
 
     local ownerCoords = GetEntityCoords(ownerPed)
     local targetCoords = GetEntityCoords(targetPed)
     if #(ownerCoords - targetCoords) > Config.RanchTransferDistance then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_190')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_190')})
         return
     end
 
@@ -4185,29 +4184,29 @@ local function HandleTransferRanch(src, ranchid, targetId)
 
     for _, ownerCid in pairs(RanchOwners) do
         if ownerCid == Target.PlayerData.citizenid then
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_target_owns_ranch')})
+            TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_target_owns_ranch')})
             return
         end
     end
 
     -- The new owner has to agree - ownership (and a job) was previously forced on them
-    TriggerClientEvent('ox_lib:notify', src, {type = 'inform', description = locale('sv_waiting_for_answer')})
+    TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'inform', description = locale('sv_waiting_for_answer')})
     if not RequestConsent(targetId, ranchData.name, locale('sv_transfer_offer'):format(Player.PlayerData.charinfo.firstname, Player.PlayerData.charinfo.lastname, ranchData.name)) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_offer_declined')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_offer_declined')})
         return
     end
 
     -- things may have changed while we waited for an answer
     if RanchOwners[ranchid] ~= Player.PlayerData.citizenid or not RSGCore.Functions.GetPlayer(targetId) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_192')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_192')})
         return
     end
 
-    -- Give the new owner the job in rsg-multijob (refused if they're at their job limit)
+    -- Give the new owner the job in the rsg-core multijob list (refused if they're at their job limit)
     local targetHadJob = Target.PlayerData.job.name == ranchid
     local jobAdded, jobReason = MultijobAddJob(Target.PlayerData.citizenid, ranchid, Config.RanchBossGrade)
     if not jobAdded then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_191')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_191')})
         if Config.Debug then print('^1[RANCH TRANSFER]^7 multijob AddJob refused: ' .. tostring(jobReason)) end
         return
     end
@@ -4222,7 +4221,7 @@ local function HandleTransferRanch(src, ranchid, targetId)
 
     if not success then
         if not targetHadJob then MultijobRemoveJob(Target.PlayerData.citizenid, ranchid) end
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_192')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_192')})
         if Config.Debug then
             print('^1[RANCH TRANSFER ERROR]^7 Database update failed: ' .. tostring(dbError))
         end
@@ -4237,17 +4236,17 @@ local function HandleTransferRanch(src, ranchid, targetId)
     Player.Functions.SetJob('unemployed', 0)
     Target.Functions.SetJob(ranchid, Config.RanchBossGrade)
 
-    TriggerClientEvent('ox_lib:notify', src, {
+    TriggerClientEvent('RSGCore:Client:Notify', src, {
         type = 'success',
         description = locale('sv_server_description_193'):format(ranchData.name, Target.PlayerData.charinfo.firstname, Target.PlayerData.charinfo.lastname)
     })
-    TriggerClientEvent('ox_lib:notify', targetId, {
+    TriggerClientEvent('RSGCore:Client:Notify', targetId, {
         type = 'success',
         description = locale('sv_server_description_194'):format(ranchData.name)
     })
 
     if Config.ServerNotify then
-        TriggerClientEvent('ox_lib:notify', -1, {
+        TriggerClientEvent('RSGCore:Client:Notify', -1, {
             type = 'inform',
             description = locale('sv_server_description_195'):format(ranchData.name)
         })
@@ -4261,7 +4260,7 @@ end
 RegisterNetEvent('rsg-ranch:server:transferRanchOwnership', function(ranchid, targetId)
     local src = source
     if not RanchWithLock('ranch:' .. tostring(ranchid), function() HandleTransferRanch(src, ranchid, targetId) end) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_152')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_152')})
     end
 end)
 
@@ -4274,12 +4273,12 @@ local function HandleSellRanch(src, ranchid)
     local Player = RSGCore.Functions.GetPlayer(src)
 
     if not Player then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_196')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_196')})
         return
     end
 
     if type(ranchid) ~= 'string' then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_197')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_197')})
         return
     end
 
@@ -4293,25 +4292,25 @@ local function HandleSellRanch(src, ranchid)
     end
 
     if not ranchData then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_198')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_198')})
         return
     end
 
     -- Must be the current boss of this ranch
     if Player.PlayerData.job.name ~= ranchid or Player.PlayerData.job.grade.level < Config.RanchBossGrade then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_199')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_199')})
         return
     end
 
     if RanchOwners[ranchid] ~= Player.PlayerData.citizenid then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_200')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_200')})
         return
     end
 
     -- Recompute the refund server-side - never trust a client-supplied amount
     local price = ranchData.price
     if not price then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_201')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_201')})
         return
     end
 
@@ -4346,7 +4345,7 @@ local function HandleSellRanch(src, ranchid)
     end)
 
     if not success then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_202')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_202')})
         if Config.Debug then
             print('^1[RANCH SELL ERROR]^7 Database delete failed: ' .. tostring(dbError))
         end
@@ -4367,7 +4366,7 @@ local function HandleSellRanch(src, ranchid)
 
     Player.Functions.AddMoney('cash', refund, 'rsg-ranch-sell')
 
-    TriggerClientEvent('ox_lib:notify', src, {
+    TriggerClientEvent('RSGCore:Client:Notify', src, {
         type = 'success',
         description = graceLeft > 0
             and locale('sv_sell_ranch_grace'):format(ranchData.name, refund, math.floor(refundPercentage * 100 + 0.5))
@@ -4375,7 +4374,7 @@ local function HandleSellRanch(src, ranchid)
     })
 
     if Config.ServerNotify then
-        TriggerClientEvent('ox_lib:notify', -1, {
+        TriggerClientEvent('RSGCore:Client:Notify', -1, {
             type = 'inform',
             description = locale('sv_server_description_204'):format(ranchData.name)
         })
@@ -4389,7 +4388,7 @@ end
 RegisterNetEvent('rsg-ranch:server:sellRanch', function(ranchid)
     local src = source
     if not RanchWithLock('ranch:' .. tostring(ranchid), function() HandleSellRanch(src, ranchid) end) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_152')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_152')})
     end
 end)
 
@@ -4457,7 +4456,7 @@ RegisterNetEvent('rsg-ranch:server:startBreeding', function(animal1id, animal2id
     local Player = RSGCore.Functions.GetPlayer(src)
 
     if not Player or not isPlayerRanchStaff(Player) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_205')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_205')})
         return
     end
     if not RanchCan(Player, 'canBreed') then return DenyPermission(src) end
@@ -4467,19 +4466,19 @@ RegisterNetEvent('rsg-ranch:server:startBreeding', function(animal1id, animal2id
     -- Verify both animals belong to the player's own ranch and the player is near both
     local pairResult = MySQL.query.await('SELECT animalid, ranchid, pos_x, pos_y, pos_z FROM rsg_ranch_animals WHERE animalid IN (?, ?)', {animal1id, animal2id})
     if not pairResult or #pairResult ~= 2 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_206')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_206')})
         return
     end
 
     local playerCoords = GetEntityCoords(GetPlayerPed(src))
     for _, a in ipairs(pairResult) do
         if a.ranchid ~= Player.PlayerData.job.name then
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_207')})
+            TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_207')})
             return
         end
         local animalVec = vector3(a.pos_x, a.pos_y, a.pos_z)
         if #(playerCoords - animalVec) > Config.BreedingDistance then
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_208')})
+            TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_208')})
             return
         end
     end
@@ -4490,9 +4489,9 @@ RegisterNetEvent('rsg-ranch:server:startBreeding', function(animal1id, animal2id
 
     local ok, reason = StartBreeding(animal1id, animal2id, false)
     if ok then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('sv_server_description_209')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'success', description = locale('sv_server_description_209')})
     else
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_breeding_failed_' .. reason)})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_breeding_failed_' .. reason)})
     end
 end)
 
@@ -4661,14 +4660,9 @@ CreateThread(function()
     -- Wait for server to be fully loaded
     Wait(5000)
     
-    if not lib or not lib.cron then
-        print('^1[RSG-RANCH ERROR]^7 ox_lib cron not available! Make sure ox_lib is started before rsg-ranch.')
-        return
-    end
-    
     print('^2[RSG-RANCH]^7 Initializing animal survival cronjob with schedule: ' .. Config.AnimalCronJob)
     
-    lib.cron.new(Config.AnimalCronJob, function ()
+    RSGCore.Functions.CreateCron(Config.AnimalCronJob, function ()
         if Config.Debug then
             print('^2[RSG-RANCH CRON]^7 Starting animal update cycle at ' .. os.date('%Y-%m-%d %H:%M:%S'))
         end
@@ -4692,14 +4686,9 @@ end)
 CreateThread(function()
     Wait(5500)
 
-    if not lib or not lib.cron then
-        print('^1[RSG-RANCH ERROR]^7 ox_lib cron not available! Make sure ox_lib is started before rsg-ranch.')
-        return
-    end
-
     print('^2[RSG-RANCH]^7 Initializing animal feed/water cronjob with schedule: ' .. (Config.AnimalFeedWaterCronJob or Config.AnimalCronJob))
 
-    lib.cron.new(Config.AnimalFeedWaterCronJob or Config.AnimalCronJob, function ()
+    RSGCore.Functions.CreateCron(Config.AnimalFeedWaterCronJob or Config.AnimalCronJob, function ()
         if Config.Debug then
             print('^2[RSG-RANCH CRON]^7 Starting animal feed/water cycle at ' .. os.date('%Y-%m-%d %H:%M:%S'))
         end
@@ -4717,14 +4706,9 @@ end)
 CreateThread(function()
     Wait(6000)
 
-    if not lib or not lib.cron then
-        print('^1[RSG-RANCH ERROR]^7 ox_lib cron not available! Make sure ox_lib is started before rsg-ranch.')
-        return
-    end
-
     print('^2[RSG-RANCH]^7 Initializing chicken coop feed cronjob with schedule: ' .. (Config.ChickenCoopFeedCronJob or Config.AnimalCronJob))
 
-    lib.cron.new(Config.ChickenCoopFeedCronJob or Config.AnimalCronJob, function()
+    RSGCore.Functions.CreateCron(Config.ChickenCoopFeedCronJob or Config.AnimalCronJob, function()
         if Config.Debug then
             print('^2[RSG-RANCH CRON]^7 Starting chicken coop feed check at ' .. os.date('%Y-%m-%d %H:%M:%S'))
         end
@@ -4757,7 +4741,7 @@ function ProcessChickenCoopFeed()
                         TriggerClientEvent('rsg-ranch:client:updateChickenCoop', -1, coop.coopid, 0)
 
                         if Config.ServerNotify then
-                            TriggerClientEvent('ox_lib:notify', -1, {
+                            TriggerClientEvent('RSGCore:Client:Notify', -1, {
                                 type = 'error',
                                 description = locale('sv_server_description_210'):format(coop.ranchid)
                             })
@@ -5663,20 +5647,20 @@ RegisterNetEvent('rsg-ranch:server:hireEmployee', function(ranchid, targetId, gr
     -- The hire menu only lists nearby players - enforce that server-side so a
     -- manager can't force a ranch job onto any player on the server by ID
     if #(GetEntityCoords(GetPlayerPed(src)) - GetEntityCoords(GetPlayerPed(targetId))) > 10.0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_190')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_190')})
         return
     end
     
     -- Check permissions
     if Player.PlayerData.job.name ~= ranchid or Player.PlayerData.job.grade.level < Config.StaffManagement.MinGradeToManage then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_211')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_211')})
         return
     end
     if not IsNearRanch(src, ranchid) then return NotifyNotNearRanch(src) end
 
     -- Check if target player is already employed at this ranch
     if Target.PlayerData.job.name == ranchid then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_212')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_212')})
         if Config.Debug then
             print('^3[STAFF MANAGEMENT]^7 Attempted to hire ' .. Target.PlayerData.charinfo.firstname .. ' who is already employed at ' .. ranchid)
         end
@@ -5685,7 +5669,7 @@ RegisterNetEvent('rsg-ranch:server:hireEmployee', function(ranchid, targetId, gr
 
 	local staffCount = exports['rsg-ranch']:getStaffCount(ranchid)
 	if staffCount >= Config.StaffManagement.MaxEmployeesPerRanch then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_214')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_214')})
         return
 	end
 
@@ -5695,7 +5679,7 @@ RegisterNetEvent('rsg-ranch:server:hireEmployee', function(ranchid, targetId, gr
 	grade = tonumber(grade)
 	local hirerGrade = Player.PlayerData.job.grade.level
 	if not grade or grade < 0 or grade >= hirerGrade or not Config.StaffManagement.Permissions[grade] then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_215')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_215')})
         if Config.Debug then
             print('^1[STAFF MANAGEMENT ERROR]^7 Player ' .. src .. ' attempted to hire with invalid grade ' .. tostring(grade) .. ' (hirer grade: ' .. tostring(hirerGrade) .. ')')
         end
@@ -5704,29 +5688,29 @@ RegisterNetEvent('rsg-ranch:server:hireEmployee', function(ranchid, targetId, gr
 
     -- The player being hired has to accept - jobs used to be forced on anyone nearby
     local ranchName = (GetRanchLocationData(ranchid) or {}).name or ranchid
-    TriggerClientEvent('ox_lib:notify', src, {type = 'inform', description = locale('sv_waiting_for_answer')})
+    TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'inform', description = locale('sv_waiting_for_answer')})
     if not RequestConsent(targetId, ranchName, locale('sv_job_offer'):format(ranchName)) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_offer_declined')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_offer_declined')})
         return
     end
     Target = RSGCore.Functions.GetPlayer(targetId)
     if not Target or Target.PlayerData.job.name == ranchid then return end
     if exports['rsg-ranch']:getStaffCount(ranchid) >= Config.StaffManagement.MaxEmployeesPerRanch then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_214')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_214')})
         return
     end
 
-    -- Register with rsg-multijob; it refuses if they already hold the maximum number of jobs
+    -- Register in the rsg-core multijob list; it refuses if they already hold the maximum number of jobs
     local jobAdded, jobReason = MultijobAddJob(Target.PlayerData.citizenid, ranchid, grade)
     if not jobAdded then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_213')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_213')})
         if Config.Debug then print('^1[STAFF MANAGEMENT]^7 multijob AddJob refused: ' .. tostring(jobReason)) end
         return
     end
 
     Target.Functions.SetJob(ranchid, grade)
-    TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('sv_server_description_216')})
-    TriggerClientEvent('ox_lib:notify', targetId, {type = 'success', description = locale('sv_server_description_217'):format((GetRanchLocationData(ranchid) or {}).name or ranchid)})
+    TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'success', description = locale('sv_server_description_216')})
+    TriggerClientEvent('RSGCore:Client:Notify', targetId, {type = 'success', description = locale('sv_server_description_217'):format((GetRanchLocationData(ranchid) or {}).name or ranchid)})
 
 end)
 
@@ -5739,13 +5723,13 @@ RegisterNetEvent('rsg-ranch:server:fireEmployee', function(ranchid, targetCitize
     
     -- Check permissions
     if Player.PlayerData.job.name ~= ranchid or Player.PlayerData.job.grade.level < Config.StaffManagement.MinGradeToManage then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_218')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_218')})
         return
     end
     
     -- Prevent manager from firing themselves
     if Player.PlayerData.citizenid == targetCitizenid then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_219')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_219')})
         return
     end
     if type(targetCitizenid) ~= 'string' then return end
@@ -5754,7 +5738,7 @@ RegisterNetEvent('rsg-ranch:server:fireEmployee', function(ranchid, targetCitize
     -- The owner can never be fired, and only the owner can fire someone of
     -- equal or higher grade (stops a manager locking the owner out of their ranch)
     if RanchOwners[ranchid] == targetCitizenid then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_cannot_target_owner')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_cannot_target_owner')})
         return
     end
     local isOwner = RanchOwners[ranchid] == Player.PlayerData.citizenid
@@ -5765,11 +5749,11 @@ RegisterNetEvent('rsg-ranch:server:fireEmployee', function(ranchid, targetCitize
     if Target then
         -- Verify the target is actually employed at this ranch
         if Target.PlayerData.job.name ~= ranchid then
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_220')})
+            TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_220')})
             return
         end
         if not isOwner and Target.PlayerData.job.grade.level >= Player.PlayerData.job.grade.level then
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_239')})
+            TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_239')})
             return
         end
         
@@ -5777,24 +5761,24 @@ RegisterNetEvent('rsg-ranch:server:fireEmployee', function(ranchid, targetCitize
         Target.Functions.SetJob('unemployed', 0)
 		-- update multijob
         MultijobRemoveJob(targetCitizenid, ranchid)
-        TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('sv_server_description_228')})
-        TriggerClientEvent('ox_lib:notify', Target.PlayerData.source, {type = 'error', description = locale('sv_server_description_223'):format((GetRanchLocationData(ranchid) or {}).name or ranchid)})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'success', description = locale('sv_server_description_228')})
+        TriggerClientEvent('RSGCore:Client:Notify', Target.PlayerData.source, {type = 'error', description = locale('sv_server_description_223'):format((GetRanchLocationData(ranchid) or {}).name or ranchid)})
     else
         -- Player is offline, verify they work at this ranch first
         local checkResult = MySQL.query.await('SELECT job FROM players WHERE citizenid = ?', {targetCitizenid})
         if checkResult and #checkResult > 0 then
             local jobData = json.decode(checkResult[1].job) or {}
             if jobData.name ~= ranchid then
-                TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_224')})
+                TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_224')})
                 return
             end
             local offlineGrade = jobData.grade and jobData.grade.level or 0
             if not isOwner and offlineGrade >= Player.PlayerData.job.grade.level then
-                TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_239')})
+                TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_239')})
                 return
             end
         else
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_225')})
+            TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_225')})
             return
         end
         
@@ -5802,7 +5786,7 @@ RegisterNetEvent('rsg-ranch:server:fireEmployee', function(ranchid, targetCitize
         MySQL.update('UPDATE players SET job = JSON_SET(JSON_SET(job, "$.name", "unemployed"), "$.grade", JSON_OBJECT("level", 0, "name", "Unemployed")) WHERE citizenid = ?', {targetCitizenid})
 		-- update multijob
         MultijobRemoveJob(targetCitizenid, ranchid)
-        TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('sv_server_description_228')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'success', description = locale('sv_server_description_228')})
 
     end
 
@@ -5820,7 +5804,7 @@ RegisterNetEvent('rsg-ranch:server:promoteEmployee', function(ranchid, targetCit
     
     -- Check permissions
     if Player.PlayerData.job.name ~= ranchid or Player.PlayerData.job.grade.level < Config.StaffManagement.MinGradeToManage then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_229')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_229')})
         return
     end
     if not IsNearRanch(src, ranchid) then return NotifyNotNearRanch(src) end
@@ -5830,7 +5814,7 @@ RegisterNetEvent('rsg-ranch:server:promoteEmployee', function(ranchid, targetCit
     if Target then
         -- Verify the target is actually employed at this ranch
         if Target.PlayerData.job.name ~= ranchid then
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_230')})
+            TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_230')})
             return
         end
         
@@ -5839,24 +5823,24 @@ RegisterNetEvent('rsg-ranch:server:promoteEmployee', function(ranchid, targetCit
         
         -- Prevent promoting to same or higher grade than manager
         if currentGrade + 1 >= Player.PlayerData.job.grade.level and Player.PlayerData.job.grade.level < maxGrade then
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_231')})
+            TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_231')})
             return
         end
         
         if currentGrade >= maxGrade then
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_232')})
+            TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_232')})
             return
         end
         
         Target.Functions.SetJob(ranchid, currentGrade + 1)
-        TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('sv_server_description_233')})
-        TriggerClientEvent('ox_lib:notify', Target.PlayerData.source, {type = 'success', description = locale('sv_server_description_234')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'success', description = locale('sv_server_description_233')})
+        TriggerClientEvent('RSGCore:Client:Notify', Target.PlayerData.source, {type = 'success', description = locale('sv_server_description_234')})
         
         if Config.Debug then
             print('^2[STAFF MANAGEMENT]^7 ' .. Player.PlayerData.charinfo.firstname .. ' promoted ' .. Target.PlayerData.charinfo.firstname .. ' to grade ' .. (currentGrade + 1))
         end
     else
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_235')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_235')})
     end
 end)
 
@@ -5869,17 +5853,17 @@ RegisterNetEvent('rsg-ranch:server:demoteEmployee', function(ranchid, targetCiti
     
     -- Check permissions
     if Player.PlayerData.job.name ~= ranchid or Player.PlayerData.job.grade.level < Config.StaffManagement.MinGradeToManage then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_236')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_236')})
         return
     end
     
     -- Prevent manager from demoting themselves
     if Player.PlayerData.citizenid == targetCitizenid then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_237')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_237')})
         return
     end
     if RanchOwners[ranchid] == targetCitizenid then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_cannot_target_owner')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_cannot_target_owner')})
         return
     end
     if not IsNearRanch(src, ranchid) then return NotifyNotNearRanch(src) end
@@ -5889,7 +5873,7 @@ RegisterNetEvent('rsg-ranch:server:demoteEmployee', function(ranchid, targetCiti
     if Target then
         -- Verify the target is actually employed at this ranch
         if Target.PlayerData.job.name ~= ranchid then
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_238')})
+            TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_238')})
             return
         end
         
@@ -5897,24 +5881,24 @@ RegisterNetEvent('rsg-ranch:server:demoteEmployee', function(ranchid, targetCiti
         
         -- Prevent demoting someone at same or higher rank (unless you're boss)
         if currentGrade >= Player.PlayerData.job.grade.level and Player.PlayerData.job.grade.level < Config.RanchBossGrade then
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_239')})
+            TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_239')})
             return
         end
         
         if currentGrade <= 0 then
-            TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_240')})
+            TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_240')})
             return
         end
         
         Target.Functions.SetJob(ranchid, currentGrade - 1)
-        TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('sv_server_description_241')})
-        TriggerClientEvent('ox_lib:notify', Target.PlayerData.source, {type = 'inform', description = locale('sv_server_description_242')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'success', description = locale('sv_server_description_241')})
+        TriggerClientEvent('RSGCore:Client:Notify', Target.PlayerData.source, {type = 'inform', description = locale('sv_server_description_242')})
         
         if Config.Debug then
             print('^3[STAFF MANAGEMENT]^7 ' .. Player.PlayerData.charinfo.firstname .. ' demoted ' .. Target.PlayerData.charinfo.firstname .. ' to grade ' .. (currentGrade - 1))
         end
     else
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_server_description_243')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_243')})
     end
 end)
 
@@ -5964,7 +5948,7 @@ local function RanchDirectSalePrice(model, ageDays)
     end
     return price, ageCategory, direct
 end
-local function NotifyError(src, text) TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = text}) end
+local function NotifyError(src, text) TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = text}) end
 
 local function AnimalAgeDays(row)
     if row.born and row.born > 0 then
@@ -6067,7 +6051,7 @@ RegisterNetEvent('rsg-ranch:server:sellAtRanch', function(animalid)
     if not deleted or deleted <= 0 then return NotifyError(src, MarketMsg(251)) end
 
     Player.Functions.AddMoney('cash', salePrice, 'rsg-ranch-market-sale')
-    TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = MarketMsg(species.msg.sold):format(salePrice)})
+    TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'success', description = MarketMsg(species.msg.sold):format(salePrice)})
     TriggerClientEvent('rsg-ranch:client:removeAnimal', -1, animal.animalid)
 
     if Config.Debug then
@@ -6100,7 +6084,7 @@ RegisterNetEvent('rsg-ranch:server:slaughterAtRanch', function(animalid)
     if not deleted or deleted <= 0 then return NotifyError(src, MarketMsg(261)) end
 
     exports['rsg-inventory']:AddItem(src, jointItem, jointCount, nil, nil, 'rsg-ranch-slaughter')
-    TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = MarketMsg(species.msg.slaughtered):format(jointCount)})
+    TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'success', description = MarketMsg(species.msg.slaughtered):format(jointCount)})
     TriggerClientEvent('rsg-ranch:client:removeAnimal', -1, animal.animalid)
 
     if Config.Debug then

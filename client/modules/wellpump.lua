@@ -1,7 +1,6 @@
 -- Deployable well pumps (ported from rsg-farming): place a pump, fill an empty
 -- 'bucket' into a 'fullbucket' (limited uses), pack it back up later.
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 
 local WP      = Config.WellPump
 local Pumps   = {}   -- [id] = data
@@ -24,7 +23,7 @@ local CONTROLS = {
 ---------------------------------
 local function notify(desc, ntype)
     if not desc then return end
-    lib.notify({ title = locale('cl_wellpump_title'), description = desc, type = ntype or 'inform', duration = 4000 })
+    RSGCore.Functions.Notify({ title = locale('cl_wellpump_title'), description = desc, type = ntype or 'inform', duration = 4000 })
 end
 
 local function canAct()
@@ -83,7 +82,7 @@ local function playScenario(scenario, duration, label)
     local ped = PlayerPedId()
     local before = snapshotObjects()
     TaskStartScenarioInPlaceHash(ped, joaat(scenario), -1, true, false, false, false)
-    local ok = lib.progressBar({
+    local ok = RSGCore.Functions.ProgressBar({
         duration = duration, label = label, useWhileDead = false, canCancel = true,
         disable = { move = true, combat = true, car = true, mount = true },
     })
@@ -170,7 +169,7 @@ local function startPlacement(model, checkFn)
 
     local heading, heightOffset = GetEntityHeading(ped), 0.0
     local result, resultHeading = nil, nil
-    lib.showTextUI(locale('cl_wellpump_place_help'), { position = 'left-center' })
+    exports['rsg-core']:DrawText(locale('cl_wellpump_place_help'), 'left-center')
 
     while true do
         Wait(0)
@@ -219,7 +218,7 @@ local function startPlacement(model, checkFn)
         end
     end
 
-    lib.hideTextUI()
+    exports['rsg-core']:HideText()
     if DoesEntityExist(ghost) then DeleteObject(ghost) end
     return result, resultHeading
 end
@@ -231,7 +230,7 @@ local function pumpAction(action, id, cb, scenario, duration, label)
     local p = Pumps[id]
     if not p or not canAct() then return end
     busy = true
-    local can, reason = lib.callback.await('rsg-ranch:server:pumpPrecheck', false, action, id)
+    local can, reason = RSGCore.Functions.AwaitCallback('rsg-ranch:server:pumpPrecheck', nil, action, id)
     if not can then
         notify(reason, 'error')
         busy = false
@@ -239,7 +238,7 @@ local function pumpAction(action, id, cb, scenario, duration, label)
     end
     face(p.x, p.y)
     if playScenario(scenario, duration, label) then
-        local ok, msg = lib.callback.await(cb, false, id)
+        local ok, msg = RSGCore.Functions.AwaitCallback(cb, nil, id)
         notify(msg, ok and 'success' or 'error')
     else
         notify(locale('cl_wellpump_cancelled'), 'error')
@@ -253,7 +252,7 @@ end
 local function despawn(id)
     local ent = Spawned[id]
     if ent then
-        exports.ox_target:removeLocalEntity(ent)
+        exports['rsg-target']:removeLocalEntity(ent)
         deleteProp(ent)
     end
     Spawned[id] = nil
@@ -264,7 +263,7 @@ local function spawn(p)
     if not ent then return end
     Spawned[p.id] = ent
 
-    exports.ox_target:addLocalEntity(ent, {
+    exports['rsg-target']:addLocalEntity(ent, {
         {
             name = ('rsg_ranch_wellpump_fill_%s'):format(p.id),
             label = locale('cl_wellpump_fill_target'),
@@ -302,12 +301,12 @@ end
 RegisterNetEvent('rsg-ranch:client:syncPumps', applySync)
 
 RegisterNetEvent('RSGCore:Client:OnPlayerLoaded', function()
-    applySync(lib.callback.await('rsg-ranch:server:getPumps', false))
+    applySync(RSGCore.Functions.AwaitCallback('rsg-ranch:server:getPumps', nil))
 end)
 
 CreateThread(function()
     Wait(1000)
-    applySync(lib.callback.await('rsg-ranch:server:getPumps', false))
+    applySync(RSGCore.Functions.AwaitCallback('rsg-ranch:server:getPumps', nil))
 end)
 
 AddEventHandler('onResourceStop', function(res)
@@ -345,7 +344,7 @@ RegisterNetEvent('rsg-ranch:client:placePump', function()
     if coords then
         face(coords.x, coords.y)
         if playScenario(WP.packScenario, WP.packTime, locale('cl_wellpump_placing')) then
-            local ok, msg = lib.callback.await('rsg-ranch:server:placePump', false, coords, heading)
+            local ok, msg = RSGCore.Functions.AwaitCallback('rsg-ranch:server:placePump', nil, coords, heading)
             notify(msg, ok and 'success' or 'error')
         else
             notify(locale('cl_wellpump_cancelled'), 'error')

@@ -1,5 +1,4 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 
 ---------------------------------------------
 -- Core Variables
@@ -128,7 +127,7 @@ end
 
 -- Check what animals need to be spawned/despawned
 function SpawnManager:CheckSpawnRequests()
-    if not cache.ped or not DoesEntityExist(cache.ped) or #animalDataCache == 0 then
+    if not PlayerPedId() or not DoesEntityExist(PlayerPedId()) or #animalDataCache == 0 then
         return
     end
     
@@ -144,7 +143,7 @@ function SpawnManager:CheckSpawnRequests()
         end
     end
     
-    local playerCoords = GetEntityCoords(cache.ped)
+    local playerCoords = GetEntityCoords(PlayerPedId())
     local pendingCount = self:GetPendingCount()
     
     for _, animalData in ipairs(animalDataCache) do
@@ -364,7 +363,7 @@ function SpawnManager:CreateAnimalEntity(animalData, networkId)
     local model = GetHashKey(animalData.model)
     
     -- Request model
-    lib.requestModel(model, 5000)
+    RSGCore.Functions.RequestModel(model, 5000)
     if not HasModelLoaded(model) then
         return nil
     end
@@ -506,11 +505,11 @@ function SpawnManager:RemoveAnimalBlip(animalId)
     self.blipColorMods[animalId] = nil
 end
 
--- Setup animal interaction (ox_target)
+-- Setup animal interaction (rsg-target)
 function SpawnManager:SetupAnimalInteraction(entity, animalData)
     local animalId = tostring(animalData.animalid)
 
-    exports.ox_target:addLocalEntity(entity, {
+    exports['rsg-target']:addLocalEntity(entity, {
         {
             name = 'ranch_animal',
             label = locale('cl_animals_label_1'),
@@ -767,7 +766,7 @@ function SpawnManager:DespawnAnimal(animalId)
     local entity = animalInfo.entity
     if DoesEntityExist(entity) then
         -- Remove interaction
-        exports.ox_target:removeLocalEntity(entity, {'ranch_animal'})
+        exports['rsg-target']:removeLocalEntity(entity, {'ranch_animal'})
 
         -- Fade out effect
         if Config.AnimalFadeIn then
@@ -898,11 +897,11 @@ end
 
 -- Clean up orphaned animal entities (for startup)
 function SpawnManager:CleanupOrphanedEntities()
-    if not cache.ped or not DoesEntityExist(cache.ped) then
+    if not PlayerPedId() or not DoesEntityExist(PlayerPedId()) then
         return
     end
     
-    local playerCoords = GetEntityCoords(cache.ped)
+    local playerCoords = GetEntityCoords(PlayerPedId())
     local cleanedCount = 0
     local maxRadius = 200
 
@@ -921,7 +920,7 @@ function SpawnManager:CleanupOrphanedEntities()
     local nearbyPeds = GetGamePool('CPed')
 
     for _, entity in ipairs(nearbyPeds) do
-        if DoesEntityExist(entity) and entity ~= cache.ped then
+        if DoesEntityExist(entity) and entity ~= PlayerPedId() then
             local entityCoords = GetEntityCoords(entity)
             local distance = #(playerCoords - entityCoords)
 
@@ -940,8 +939,8 @@ function SpawnManager:CleanupOrphanedEntities()
 
                     -- If it's not tracked, it's likely orphaned from a previous session
                     if not isTracked then
-                        -- Remove any ox_target interactions
-                        exports.ox_target:removeLocalEntity(entity, {'ranch_animal'})
+                        -- Remove any rsg-target interactions
+                        exports['rsg-target']:removeLocalEntity(entity, {'ranch_animal'})
 
                         -- Delete the orphaned entity
                         DeletePed(entity)
@@ -966,7 +965,7 @@ end
 ---------------------------------------------
 -- Helper Functions
 ---------------------------------------------
--- Make isPlayerRanchStaff global so ox_target can access it
+-- Make isPlayerRanchStaff global so rsg-target can access it
 function isPlayerRanchStaff()
     local PlayerData = RSGCore.Functions.GetPlayerData()
     if not PlayerData or not PlayerData.job then
@@ -1120,7 +1119,7 @@ end)
 -- Animal menu
 RegisterNetEvent('rsg-ranch:client:animalmenu', function(animal, data)
     if not DoesEntityExist(animal) or not data or not data.animalid then
-        lib.notify({ title = locale('cl_animals_title_22'), description = locale('cl_animals_description_23'), type = 'error' })
+        RSGCore.Functions.Notify({ title = locale('cl_animals_title_22'), description = locale('cl_animals_description_23'), type = 'error' })
         return
     end
     
@@ -1328,7 +1327,7 @@ RegisterNetEvent('rsg-ranch:client:actionsmenu', function(data)
     
     local freshData = getFreshAnimalData(animalid)
     if not freshData then
-        lib.notify({ title = locale('cl_animals_title_42'), description = locale('cl_animals_description_43'), type = 'error' })
+        RSGCore.Functions.Notify({ title = locale('cl_animals_title_42'), description = locale('cl_animals_description_43'), type = 'error' })
         return
     end
     
@@ -1405,7 +1404,7 @@ local function SendAnimalToTrough(kind, data)
     local animalKey = tostring(animalid)
 
     if not DoesEntityExist(animal) or IsPedDeadOrDying(animal, true) then
-        lib.notify({ title = locale('cl_animals_title_55'), description = locale('cl_animals_description_56'), type = 'error' })
+        RSGCore.Functions.Notify({ title = locale('cl_animals_title_55'), description = locale('cl_animals_description_56'), type = 'error' })
         return
     end
 
@@ -1415,7 +1414,7 @@ local function SendAnimalToTrough(kind, data)
 
     local freshData = getFreshAnimalData(animalid)
     if not freshData then
-        lib.notify({ title = locale('cl_animals_title_42'), description = locale('cl_animals_description_43'), type = 'error' })
+        RSGCore.Functions.Notify({ title = locale('cl_animals_title_42'), description = locale('cl_animals_description_43'), type = 'error' })
         return
     end
 
@@ -1429,9 +1428,9 @@ local function SendAnimalToTrough(kind, data)
 
     if not trough then
         if kind == 'feed' then
-            lib.notify({ title = locale('cl_animals_title_121'), description = locale('cl_animals_description_122'), type = 'error' })
+            RSGCore.Functions.Notify({ title = locale('cl_animals_title_121'), description = locale('cl_animals_description_122'), type = 'error' })
         else
-            lib.notify({ title = locale('cl_animals_title_122'), description = locale('cl_animals_description_123'), type = 'error' })
+            RSGCore.Functions.Notify({ title = locale('cl_animals_title_122'), description = locale('cl_animals_description_123'), type = 'error' })
         end
         return
     end
@@ -1454,9 +1453,9 @@ local function SendAnimalToTrough(kind, data)
     local sendSpeed = 2.0
 
     if kind == 'feed' then
-        lib.notify({ title = locale('cl_animals_title_123'), description = locale('cl_animals_description_124'), duration = 4000, type = 'inform' })
+        RSGCore.Functions.Notify({ title = locale('cl_animals_title_123'), description = locale('cl_animals_description_124'), duration = 4000, type = 'inform' })
     else
-        lib.notify({ title = locale('cl_animals_title_124'), description = locale('cl_animals_description_125'), duration = 4000, type = 'inform' })
+        RSGCore.Functions.Notify({ title = locale('cl_animals_title_124'), description = locale('cl_animals_description_125'), duration = 4000, type = 'inform' })
     end
 
     CreateThread(function()
@@ -1545,14 +1544,14 @@ local function SendAnimalToTrough(kind, data)
             followStates[animalKey] = true
             local animalOffset = vector3(0.0, 2.0, 0.0)
             ClearPedTasks(animal)
-            TaskFollowToOffsetOfEntity(animal, cache.ped, animalOffset.x, animalOffset.y, animalOffset.z, 1.0, -1, 0.0, 1)
+            TaskFollowToOffsetOfEntity(animal, PlayerPedId(), animalOffset.x, animalOffset.y, animalOffset.z, 1.0, -1, 0.0, 1)
         end
 
         if not arrived then
             if kind == 'feed' then
-                lib.notify({ title = locale('cl_animals_title_125'), description = locale('cl_animals_description_126'), type = 'error' })
+                RSGCore.Functions.Notify({ title = locale('cl_animals_title_125'), description = locale('cl_animals_description_126'), type = 'error' })
             else
-                lib.notify({ title = locale('cl_animals_title_126'), description = locale('cl_animals_description_127'), type = 'error' })
+                RSGCore.Functions.Notify({ title = locale('cl_animals_title_126'), description = locale('cl_animals_description_127'), type = 'error' })
             end
             return
         end
@@ -1625,13 +1624,13 @@ end
 
 -- Animal follow system
 RegisterNetEvent('rsg-ranch:client:animalfollow', function(data)
-    if not DoesEntityExist(data.animal) or not DoesEntityExist(cache.ped) then
-        lib.notify({ title = locale('cl_animals_title_55'), description = locale('cl_animals_description_56'), type = 'error' })
+    if not DoesEntityExist(data.animal) or not DoesEntityExist(PlayerPedId()) then
+        RSGCore.Functions.Notify({ title = locale('cl_animals_title_55'), description = locale('cl_animals_description_56'), type = 'error' })
         return
     end
 
     if IsPedDeadOrDying(data.animal, true) then
-        lib.notify({ title = locale('cl_animals_title_57'), description = locale('cl_animals_description_58'), type = 'error' })
+        RSGCore.Functions.Notify({ title = locale('cl_animals_title_57'), description = locale('cl_animals_description_58'), type = 'error' })
         return
     end
 
@@ -1653,15 +1652,15 @@ RegisterNetEvent('rsg-ranch:client:animalfollow', function(data)
     if followStates[animalKey] then
         local animalOffset = vector3(0.0, 2.0, 0.0)
         ClearPedTasks(data.animal)
-        TaskFollowToOffsetOfEntity(data.animal, cache.ped, animalOffset.x, animalOffset.y, animalOffset.z, 1.0, -1, 0.0, 1)
+        TaskFollowToOffsetOfEntity(data.animal, PlayerPedId(), animalOffset.x, animalOffset.y, animalOffset.z, 1.0, -1, 0.0, 1)
         StartFollowSyncManager()
-        lib.notify({ title = locale('cl_animals_title_59'), description = locale('cl_animals_description_60'), duration = 5000, type = 'inform' })
+        RSGCore.Functions.Notify({ title = locale('cl_animals_title_59'), description = locale('cl_animals_description_60'), duration = 5000, type = 'inform' })
     else
         local currentPos = GetEntityCoords(data.animal)
         local heading = GetEntityHeading(data.animal)
         ClearPedTasks(data.animal)
         TriggerServerEvent('rsg-ranch:server:saveAnimalPosition', data.animalid, currentPos.x, currentPos.y, currentPos.z, heading)
-        lib.notify({ title = locale('cl_animals_title_61'), description = locale('cl_animals_description_62'), duration = 5000, type = 'inform' })
+        RSGCore.Functions.Notify({ title = locale('cl_animals_title_61'), description = locale('cl_animals_description_62'), duration = 5000, type = 'inform' })
     end
 end)
 
@@ -1671,13 +1670,13 @@ RegisterNetEvent('rsg-ranch:client:checkProducts', function(data)
     local animal = data.animal
     
     if not DoesEntityExist(animal) or not animalid then
-        lib.notify({ title = locale('cl_animals_title_63'), description = locale('cl_animals_description_64'), type = 'error' })
+        RSGCore.Functions.Notify({ title = locale('cl_animals_title_63'), description = locale('cl_animals_description_64'), type = 'error' })
         return
     end
     
     RSGCore.Functions.TriggerCallback('rsg-ranch:server:getAnimalProductionStatus', function(productionData)
         if not productionData then
-            lib.notify({ title = locale('cl_animals_title_65'), description = locale('cl_animals_description_66'), type = 'inform' })
+            RSGCore.Functions.Notify({ title = locale('cl_animals_title_65'), description = locale('cl_animals_description_66'), type = 'inform' })
             return
         end
         
@@ -1738,8 +1737,8 @@ RegisterNetEvent('rsg-ranch:client:collectProduct', function(data)
     local animal = data.animal
     local animalid = data.animalid
     
-    if not DoesEntityExist(cache.ped) or not DoesEntityExist(animal) then
-        lib.notify({ title = locale('cl_animals_title_76'), description = locale('cl_animals_description_77'), type = 'error' })
+    if not DoesEntityExist(PlayerPedId()) or not DoesEntityExist(animal) then
+        RSGCore.Functions.Notify({ title = locale('cl_animals_title_76'), description = locale('cl_animals_description_77'), type = 'error' })
         return
     end
     
@@ -1749,14 +1748,14 @@ RegisterNetEvent('rsg-ranch:client:collectProduct', function(data)
         -- Make the animal stand still for the duration of the collection so it
         -- doesn't wander off mid-animation, then let it resume wandering after.
         SpawnManager:PauseAnimalWander(tostring(animalid))
-        TaskTurnPedToFaceEntity(cache.ped, animal, 2000)
+        TaskTurnPedToFaceEntity(PlayerPedId(), animal, 2000)
         Wait(1500)
-        FreezeEntityPosition(cache.ped, true)
-        TaskStartScenarioInPlace(cache.ped, `WORLD_HUMAN_CROUCH_INSPECT`, 0, true)
+        FreezeEntityPosition(PlayerPedId(), true)
+        TaskStartScenarioInPlace(PlayerPedId(), `WORLD_HUMAN_CROUCH_INSPECT`, 0, true)
         Wait(5000)
-        ClearPedTasks(cache.ped)
-        SetCurrentPedWeapon(cache.ped, `WEAPON_UNARMED`, true)
-        FreezeEntityPosition(cache.ped, false)
+        ClearPedTasks(PlayerPedId())
+        SetCurrentPedWeapon(PlayerPedId(), `WEAPON_UNARMED`, true)
+        FreezeEntityPosition(PlayerPedId(), false)
         TriggerServerEvent('rsg-ranch:server:collectProduct', animalid)
         SpawnManager:ResumeAnimalWander(tostring(animalid))
         LocalPlayer.state:set('inv_busy', false, true)
@@ -1793,7 +1792,7 @@ RegisterCommand('cleanupranchanimals', function()
     end
     
     if isRanchStaff then
-        lib.notify({ title = locale('cl_animals_title_78'), description = locale('cl_animals_description_79'), type = 'inform' })
+        RSGCore.Functions.Notify({ title = locale('cl_animals_title_78'), description = locale('cl_animals_description_79'), type = 'inform' })
         
         -- Clear current tracked animals
         SpawnManager:ClearAll()
@@ -1804,9 +1803,9 @@ RegisterCommand('cleanupranchanimals', function()
         -- Refresh from server
         TriggerServerEvent('rsg-ranch:server:refreshAnimals')
         
-        lib.notify({ title = locale('cl_animals_title_80'), description = locale('cl_animals_description_81'), type = 'success' })
+        RSGCore.Functions.Notify({ title = locale('cl_animals_title_80'), description = locale('cl_animals_description_81'), type = 'success' })
     else
-        lib.notify({ title = locale('cl_animals_title_82'), description = locale('cl_animals_description_83'), type = 'error' })
+        RSGCore.Functions.Notify({ title = locale('cl_animals_title_82'), description = locale('cl_animals_description_83'), type = 'error' })
     end
 end, false)
 
@@ -1828,17 +1827,17 @@ if Config.Debug then
         end
 
         if not isRanchStaff then
-            lib.notify({ title = locale('cl_animals_title_84'), description = locale('cl_animals_description_85'), type = 'error' })
+            RSGCore.Functions.Notify({ title = locale('cl_animals_title_84'), description = locale('cl_animals_description_85'), type = 'error' })
             return
         end
 
         local animalid = tonumber(args[1])
         if not animalid then
-            lib.notify({ title = locale('cl_animals_title_86'), description = locale('cl_animals_description_87'), type = 'inform' })
+            RSGCore.Functions.Notify({ title = locale('cl_animals_title_86'), description = locale('cl_animals_description_87'), type = 'inform' })
             return
         end
 
-        lib.notify({ title = locale('cl_animals_title_88'), description = locale('cl_animals_description_89'):format(animalid), type = 'inform' })
+        RSGCore.Functions.Notify({ title = locale('cl_animals_title_88'), description = locale('cl_animals_description_89'):format(animalid), type = 'inform' })
 
         RSGCore.Functions.TriggerCallback('rsg-ranch:server:getAnimalProductionStatus', function(productionData)
             print('^3[CLIENT PRODUCTION TEST]^7 Result for animal ' .. animalid .. ':')
@@ -1853,11 +1852,11 @@ if Config.Debug then
             end
 
             if not productionData then
-                lib.notify({ title = locale('cl_animals_title_90'), description = locale('cl_animals_description_91'):format(animalid), type = 'error' })
+                RSGCore.Functions.Notify({ title = locale('cl_animals_title_90'), description = locale('cl_animals_description_91'):format(animalid), type = 'error' })
             else
                 local status = productionData.hasProduct and locale('cl_ready_to_collect') or
                               productionData.canProduce and locale('cl_can_produce') or locale('cl_cannot_produce')
-                lib.notify({
+                RSGCore.Functions.Notify({
                     title = locale('cl_animals_title_92'),
                     description = locale('cl_animals_description_93'):format(animalid, productionData.productName, status),
                     type = 'success'
@@ -1879,7 +1878,7 @@ RegisterNetEvent('rsg-ranch:client:findBreedingPartner', function(data)
     
     RSGCore.Functions.TriggerCallback('rsg-ranch:server:getAvailableAnimalsForBreeding', function(availableAnimals)
         if not availableAnimals or #availableAnimals == 0 then
-            lib.notify({ 
+            RSGCore.Functions.Notify({ 
                 title = locale('cl_animals_title_94'), 
                 description = locale('cl_animals_description_95'), 
                 type = 'inform' 
@@ -1962,7 +1961,7 @@ if Config.Debug then
 RegisterCommand('validatemenu', function(source, args)
     local Player = RSGCore.Functions.GetPlayerData()
     if not Player or not Player.job then
-        lib.notify({ title = locale('cl_animals_title_109'), description = locale('cl_animals_description_110'), type = 'error' })
+        RSGCore.Functions.Notify({ title = locale('cl_animals_title_109'), description = locale('cl_animals_description_110'), type = 'error' })
         return
     end
     
@@ -1977,17 +1976,17 @@ RegisterCommand('validatemenu', function(source, args)
     end
     
     if not isRanchStaff then
-        lib.notify({ title = locale('cl_animals_title_111'), description = locale('cl_animals_description_112'), type = 'error' })
+        RSGCore.Functions.Notify({ title = locale('cl_animals_title_111'), description = locale('cl_animals_description_112'), type = 'error' })
         return
     end
     
     local animalid = tonumber(args[1])
     if not animalid then
-        lib.notify({ title = locale('cl_animals_title_113'), description = locale('cl_animals_description_114'), type = 'inform' })
+        RSGCore.Functions.Notify({ title = locale('cl_animals_title_113'), description = locale('cl_animals_description_114'), type = 'inform' })
         return
     end
     
-    lib.notify({ title = locale('cl_animals_title_115'), description = locale('cl_animals_description_116'):format(animalid), type = 'inform' })
+    RSGCore.Functions.Notify({ title = locale('cl_animals_title_115'), description = locale('cl_animals_description_116'):format(animalid), type = 'inform' })
     
     local validationResults = {}
     
@@ -2028,8 +2027,8 @@ RegisterCommand('validatemenu', function(source, args)
     if entity and DoesEntityExist(entity) then
         table.insert(validationResults, '✅ Entity exists and spawned')
         
-        -- Check 5: ox_target interaction  
-        local playerCoords = GetEntityCoords(cache.ped)
+        -- Check 5: rsg-target interaction  
+        local playerCoords = GetEntityCoords(PlayerPedId())
         local entityCoords = GetEntityCoords(entity)
         local distance = #(playerCoords - entityCoords)
         
@@ -2055,7 +2054,7 @@ RegisterCommand('validatemenu', function(source, args)
     -- Display results
     CreateThread(function()
         for i, result in ipairs(validationResults) do
-            lib.notify({ 
+            RSGCore.Functions.Notify({ 
                 title = locale('cl_animals_title_117'):format(i, #validationResults), 
                 description = result,
                 type = string.find(result, '✅') and 'success' or string.find(result, '❌') and 'error' or 'info'
@@ -2070,7 +2069,7 @@ RegisterCommand('validatemenu', function(source, args)
             end
         end
         
-        lib.notify({
+        RSGCore.Functions.Notify({
             title = locale('cl_animals_title_118'),
             description = locale('cl_animals_description_119'):format(passedChecks, #validationResults),
             type = passedChecks == #validationResults and 'success' or 'info'
@@ -2099,7 +2098,7 @@ AddEventHandler('onResourceStart', function(resourceName)
         Wait(3000)
         
         -- Only cleanup if player is loaded
-        if cache.ped and DoesEntityExist(cache.ped) then
+        if PlayerPedId() and DoesEntityExist(PlayerPedId()) then
             if Config.Debug then
                 print('^3[SPAWN MANAGER]^7 Resource restarted - cleaning up orphaned entities')
             end
@@ -2121,7 +2120,7 @@ end)
 ---------------------------------------------
 CreateThread(function()
     Wait(1000)
-    if cache.ped and DoesEntityExist(cache.ped) then
+    if PlayerPedId() and DoesEntityExist(PlayerPedId()) then
         SpawnManager:Initialize()
     end
 end)

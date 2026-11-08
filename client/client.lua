@@ -1,5 +1,4 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 
 ---------------------------------------------
 -- map blips (ranches, buy points, sale points)
@@ -69,7 +68,7 @@ RegisterNetEvent('rsg-ranch:client:applyRanchSettings', function(settings)
 end)
 
 CreateThread(function()
-    local ok, settings = pcall(lib.callback.await, 'rsg-ranch:server:getRanchSettings', false)
+    local ok, settings = pcall(RSGCore.Functions.AwaitCallback, 'rsg-ranch:server:getRanchSettings', nil)
     if ok and type(settings) == 'table' then
         TriggerEvent('rsg-ranch:client:applyRanchSettings', settings)
     else
@@ -100,7 +99,7 @@ RegisterNetEvent('rsg-ranch:client:openranch', function(ranchid, jobaccess)
         end
 
         if playerjob ~= jobaccess then
-            lib.notify({ description = locale('cl_client_not_staff'), type = 'error' })
+            RSGCore.Functions.Notify({ description = locale('cl_client_not_staff'), type = 'error' })
             return
         end
 

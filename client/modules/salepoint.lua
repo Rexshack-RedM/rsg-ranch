@@ -1,7 +1,6 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
 local salePointNPCs = {} -- Track spawned sale point NPCs
 local salePointBlips = {} -- Track spawned sale point blips
-lib.locale()
 
 ---------------------------------------------
 -- sale point blips
@@ -28,7 +27,7 @@ local function CleanupExistingSalePointNPCs()
     local cleanedCount = 0
     
     for _, ped in ipairs(allPeds) do
-        if DoesEntityExist(ped) and ped ~= cache.ped then
+        if DoesEntityExist(ped) and ped ~= PlayerPedId() then
             -- Check if this ped is at a sale point location
             local pedCoords = GetEntityCoords(ped)
             for _, salePointData in pairs(Config.SalePointLocations) do
@@ -56,7 +55,7 @@ CreateThread(function()
     Wait(500)
     
     for i, salePointData in pairs(Config.SalePointLocations) do
-        lib.requestModel(salePointData.npcmodel, 10000)
+        RSGCore.Functions.RequestModel(salePointData.npcmodel, 10000)
         
         local salePointNPC = CreatePed(salePointData.npcmodel, salePointData.npccoords.x, salePointData.npccoords.y, salePointData.npccoords.z - 1, salePointData.npccoords.w, false, true, 0, 0)
         Citizen.InvokeNative(0x283978A15512B2FE, salePointNPC, true)
@@ -71,7 +70,7 @@ CreateThread(function()
         salePointNPCs[i] = salePointNPC
         
         -- target interaction
-        exports.ox_target:addLocalEntity(salePointNPC, {
+        exports['rsg-target']:addLocalEntity(salePointNPC, {
             {
                 name = 'sale_point_npc',
                 label = locale('cl_salepoint_label_1'),
@@ -98,7 +97,7 @@ local function ConfirmSale(animal)
 
     -- Check if animal is nearby before showing confirmation (only if proximity is required)
     if Config.RequireAnimalPresent and not animal.isNearby then
-        lib.notify({
+        RSGCore.Functions.Notify({
             title = locale('cl_salepoint_title_5'),
             description = locale('cl_salepoint_description_6'):format((animal.distance or 'unknown')),
             type = 'error'
@@ -117,7 +116,7 @@ local function ConfirmSale(animal)
         -- Server recomputes the price and validates ownership/proximity itself;
         -- we only need to tell it which animal to sell.
         TriggerServerEvent('rsg-ranch:server:sellAnimal', animal.animalid)
-        lib.notify({ title = locale('cl_salepoint_title_9'), description = locale('cl_salepoint_description_10'), type = 'inform' })
+        RSGCore.Functions.Notify({ title = locale('cl_salepoint_title_9'), description = locale('cl_salepoint_description_10'), type = 'inform' })
     end
 end
 
@@ -126,7 +125,7 @@ end
 ---------------------------------------------
 local function ConfirmSellAll(animals)
     if not animals or #animals == 0 then
-        lib.notify({ title = locale('cl_salepoint_title_11'), description = locale('cl_salepoint_description_12'), type = 'error' })
+        RSGCore.Functions.Notify({ title = locale('cl_salepoint_title_11'), description = locale('cl_salepoint_description_12'), type = 'error' })
         return
     end
 
@@ -157,7 +156,7 @@ local function ConfirmSellAll(animals)
 
     if alert == 'confirm' then
         -- Start selling process
-        lib.notify({ title = locale('cl_salepoint_title_15'), description = locale('cl_salepoint_description_16'):format(#animals), type = 'inform' })
+        RSGCore.Functions.Notify({ title = locale('cl_salepoint_title_15'), description = locale('cl_salepoint_description_16'):format(#animals), type = 'inform' })
 
         -- Server recomputes prices and validates ownership/proximity for each animal;
         -- we only need to send the list of animal ids to sell.
@@ -187,13 +186,13 @@ RegisterNetEvent('rsg-ranch:client:openSaleMenu', function(salePointData)
     end
     
     if not isRancher then
-        lib.notify({ title = locale('cl_salepoint_title_17'), description = locale('cl_salepoint_description_18'), type = 'error' })
+        RSGCore.Functions.Notify({ title = locale('cl_salepoint_title_17'), description = locale('cl_salepoint_description_18'), type = 'error' })
         return
     end
     
     -- Trainee Ranchers (level 0) cannot sell animals
     if joblevel < 1 then
-        lib.notify({ title = locale('cl_salepoint_title_19'), description = locale('cl_salepoint_description_20'), type = 'error' })
+        RSGCore.Functions.Notify({ title = locale('cl_salepoint_title_19'), description = locale('cl_salepoint_description_20'), type = 'error' })
         return
     end
     
@@ -201,9 +200,9 @@ RegisterNetEvent('rsg-ranch:client:openSaleMenu', function(salePointData)
     RSGCore.Functions.TriggerCallback('rsg-ranch:server:getNearbyAnimalsForSale', function(animals)
         if not animals or #animals == 0 then
             if Config.RequireAnimalPresent then
-                lib.notify({ title = locale('cl_salepoint_title_21'), description = locale('cl_salepoint_description_22'), type = 'inform' })
+                RSGCore.Functions.Notify({ title = locale('cl_salepoint_title_21'), description = locale('cl_salepoint_description_22'), type = 'inform' })
             else
-                lib.notify({ title = locale('cl_salepoint_title_23'), description = locale('cl_salepoint_description_24'), type = 'inform' })
+                RSGCore.Functions.Notify({ title = locale('cl_salepoint_title_23'), description = locale('cl_salepoint_description_24'), type = 'inform' })
             end
             return
         end
@@ -378,7 +377,7 @@ AddEventHandler('onResourceStop', function(resourceName)
     -- Clean up sale point NPCs
     for i, npc in pairs(salePointNPCs) do
         if DoesEntityExist(npc) then
-            exports.ox_target:removeLocalEntity(npc, 'sale_point_npc')
+            exports['rsg-target']:removeLocalEntity(npc, 'sale_point_npc')
             DeletePed(npc)
         end
         salePointNPCs[i] = nil

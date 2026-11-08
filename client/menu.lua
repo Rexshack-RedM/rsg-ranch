@@ -4,7 +4,6 @@
 --   Menu.registerContext(def)  Menu.showContext(id)  Menu.hideContext(onExit)
 --   Menu.getOpenContextMenu()  Menu.alertDialog(opts) -> 'confirm' | 'cancel'
 ---------------------------------------------
-lib.locale()
 
 Menu = {}
 

@@ -7,14 +7,13 @@ local herdingStartTime = nil
 local selectedAnimals = {} -- For individual animal selection
 local selectionMode = false -- Whether we're in selection mode
 -- Blip tracking removed
-lib.locale()
 
 ---------------------------------------------
 -- herding command/keybind
 ---------------------------------------------
 RegisterCommand('herd', function(source, args, rawCommand)
     if not Config.HerdingEnabled then
-        lib.notify({ title = locale('cl_herding_title_1'), description = locale('cl_herding_description_2'), type = 'error' })
+        RSGCore.Functions.Notify({ title = locale('cl_herding_title_1'), description = locale('cl_herding_description_2'), type = 'error' })
         return
     end
     
@@ -33,13 +32,13 @@ RegisterCommand('herd', function(source, args, rawCommand)
     end
     
     if not isRancher then
-        lib.notify({ title = locale('cl_herding_title_3'), description = locale('cl_herding_description_4'), type = 'error' })
+        RSGCore.Functions.Notify({ title = locale('cl_herding_title_3'), description = locale('cl_herding_description_4'), type = 'error' })
         return
     end
 
     -- Trainees (grade 0) cannot herd - it becomes available once promoted to Ranch Hand
     if PlayerData.job.grade and PlayerData.job.grade.level < 1 then
-        lib.notify({ title = locale('cl_herding_title_5'), description = locale('cl_herding_description_6'), type = 'error' })
+        RSGCore.Functions.Notify({ title = locale('cl_herding_title_5'), description = locale('cl_herding_description_6'), type = 'error' })
         return
     end
 
@@ -47,7 +46,7 @@ RegisterCommand('herd', function(source, args, rawCommand)
     if Config.RequireHerdingTool then
         local hasItem = RSGCore.Functions.HasItem(Config.HerdingTool, 1)
         if not hasItem then
-            lib.notify({ title = locale('cl_herding_title_7'), description = locale('cl_herding_description_8'):format(Config.HerdingTool), type = 'error' })
+            RSGCore.Functions.Notify({ title = locale('cl_herding_title_7'), description = locale('cl_herding_description_8'):format(Config.HerdingTool), type = 'error' })
             return
         end
     end
@@ -173,7 +172,7 @@ RegisterNetEvent('rsg-ranch:client:showIndividualSelectionMenu', function()
     local nearbyAnimals = GetNearbyAnimals()
     
     if #nearbyAnimals == 0 then
-        lib.notify({ title = locale('cl_herding_title_26'), description = locale('cl_herding_description_27'), type = 'error' })
+        RSGCore.Functions.Notify({ title = locale('cl_herding_title_26'), description = locale('cl_herding_description_27'), type = 'error' })
         return
     end
     
@@ -255,7 +254,7 @@ RegisterNetEvent('rsg-ranch:client:toggleAnimalSelection', function(data)
     if selectedAnimals[animalId] then
         -- Deselect animal
         selectedAnimals[animalId] = nil
-        lib.notify({ 
+        RSGCore.Functions.Notify({ 
             title = locale('cl_herding_title_39'), 
             description = locale('cl_herding_description_40'):format(GetAnimalDisplayName(animalData.model)),
             type = 'inform'
@@ -268,7 +267,7 @@ RegisterNetEvent('rsg-ranch:client:toggleAnimalSelection', function(data)
         end
         
         if selectedCount >= Config.HerdingMaxAnimals then
-            lib.notify({ 
+            RSGCore.Functions.Notify({ 
                 title = locale('cl_herding_title_41'), 
                 description = locale('cl_herding_description_42'):format(Config.HerdingMaxAnimals),
                 type = 'error'
@@ -279,7 +278,7 @@ RegisterNetEvent('rsg-ranch:client:toggleAnimalSelection', function(data)
         
         -- Select animal
         selectedAnimals[animalId] = animalData
-        lib.notify({ 
+        RSGCore.Functions.Notify({ 
             title = locale('cl_herding_title_43'), 
             description = locale('cl_herding_description_44'):format(GetAnimalDisplayName(animalData.model)),
             type = 'success'
@@ -301,7 +300,7 @@ RegisterNetEvent('rsg-ranch:client:clearAnimalSelection', function()
     
     selectedAnimals = {}
     
-    lib.notify({ 
+    RSGCore.Functions.Notify({ 
         title = locale('cl_herding_title_45'), 
         description = locale('cl_herding_description_46'):format(clearedCount),
         type = 'inform'
@@ -316,7 +315,7 @@ end)
 ---------------------------------------------
 RegisterNetEvent('rsg-ranch:client:startSelectedHerding', function()
     if herdingActive then
-        lib.notify({ title = locale('cl_herding_title_47'), description = locale('cl_herding_description_48'), type = 'error' })
+        RSGCore.Functions.Notify({ title = locale('cl_herding_title_47'), description = locale('cl_herding_description_48'), type = 'error' })
         return
     end
     
@@ -325,7 +324,7 @@ RegisterNetEvent('rsg-ranch:client:startSelectedHerding', function()
     for animalId, animalData in pairs(selectedAnimals) do
         -- Verify animal still exists and is nearby
         if DoesEntityExist(animalData.entity) then
-            local playerPos = GetEntityCoords(cache.ped)
+            local playerPos = GetEntityCoords(PlayerPedId())
             local animalPos = GetEntityCoords(animalData.entity)
             local distance = #(playerPos - animalPos)
             
@@ -337,7 +336,7 @@ RegisterNetEvent('rsg-ranch:client:startSelectedHerding', function()
     end
     
     if selectedCount == 0 then
-        lib.notify({ title = locale('cl_herding_title_49'), description = locale('cl_herding_description_50'), type = 'error' })
+        RSGCore.Functions.Notify({ title = locale('cl_herding_title_49'), description = locale('cl_herding_description_50'), type = 'error' })
         selectedAnimals = {} -- Clear invalid selections
         return
     end
@@ -353,18 +352,18 @@ end)
 ---------------------------------------------
 RegisterNetEvent('rsg-ranch:client:startDistanceHerding', function()
     if herdingActive then
-        lib.notify({ title = locale('cl_herding_title_51'), description = locale('cl_herding_description_52'), type = 'error' })
+        RSGCore.Functions.Notify({ title = locale('cl_herding_title_51'), description = locale('cl_herding_description_52'), type = 'error' })
         return
     end
     
     local nearbyAnimals = GetNearbyAnimals()
     if #nearbyAnimals == 0 then
-        lib.notify({ title = locale('cl_herding_title_53'), description = locale('cl_herding_description_54'), type = 'error' })
+        RSGCore.Functions.Notify({ title = locale('cl_herding_title_53'), description = locale('cl_herding_description_54'), type = 'error' })
         return
     end
     
     if #nearbyAnimals > Config.HerdingMaxAnimals then
-        lib.notify({ title = locale('cl_herding_title_55'), description = locale('cl_herding_description_56'):format(#nearbyAnimals, Config.HerdingMaxAnimals), type = 'error' })
+        RSGCore.Functions.Notify({ title = locale('cl_herding_title_55'), description = locale('cl_herding_description_56'):format(#nearbyAnimals, Config.HerdingMaxAnimals), type = 'error' })
         return
     end
     
@@ -376,7 +375,7 @@ end)
 ---------------------------------------------
 RegisterNetEvent('rsg-ranch:client:startTypeHerding', function(data)
     if herdingActive then
-        lib.notify({ title = locale('cl_herding_title_57'), description = locale('cl_herding_description_58'), type = 'error' })
+        RSGCore.Functions.Notify({ title = locale('cl_herding_title_57'), description = locale('cl_herding_description_58'), type = 'error' })
         return
     end
     
@@ -390,12 +389,12 @@ RegisterNetEvent('rsg-ranch:client:startTypeHerding', function(data)
     end
     
     if #filteredAnimals == 0 then
-        lib.notify({ title = locale('cl_herding_title_59'), description = locale('cl_herding_description_60'), type = 'error' })
+        RSGCore.Functions.Notify({ title = locale('cl_herding_title_59'), description = locale('cl_herding_description_60'), type = 'error' })
         return
     end
     
     if #filteredAnimals > Config.HerdingMaxAnimals then
-        lib.notify({ title = locale('cl_herding_title_61'), description = locale('cl_herding_description_62'):format(#filteredAnimals, Config.HerdingMaxAnimals), type = 'error' })
+        RSGCore.Functions.Notify({ title = locale('cl_herding_title_61'), description = locale('cl_herding_description_62'):format(#filteredAnimals, Config.HerdingMaxAnimals), type = 'error' })
         return
     end
     
@@ -445,7 +444,7 @@ RegisterNetEvent('rsg-ranch:client:stopHerding', function()
     -- Clear any pending selections
     selectedAnimals = {}
     
-    lib.notify({ 
+    RSGCore.Functions.Notify({ 
         title = locale('cl_herding_title_63'), 
         description = locale('cl_herding_description_64'):format(animalCount), 
         type = 'success' 
@@ -456,7 +455,7 @@ end)
 -- core herding functions
 ---------------------------------------------
 function GetNearbyAnimals()
-    local playerPos = GetEntityCoords(cache.ped)
+    local playerPos = GetEntityCoords(PlayerPedId())
     local nearbyAnimals = {}
     
     -- Try to get animal data cache, fall back to entity scanning if not available
@@ -552,7 +551,7 @@ function GetNearbyAnimals()
         local nearbyEntities = GetGamePool('CPed')
         
         for _, entity in ipairs(nearbyEntities) do
-            if DoesEntityExist(entity) and entity ~= cache.ped then
+            if DoesEntityExist(entity) and entity ~= PlayerPedId() then
                 local entityModel = GetEntityModel(entity)
                 local modelName = nil
                 
@@ -634,7 +633,7 @@ function StartHerding(animals, herdType)
         typeText = 'selected type'
     end
     
-    lib.notify({ 
+    RSGCore.Functions.Notify({ 
         title = locale('cl_herding_title_65'), 
         description = locale('cl_herding_description_66'):format(animalCount, typeText), 
         type = 'success',
@@ -656,7 +655,7 @@ function StartHerding(animals, herdType)
             -- Check timeout
             if herdingStartTime and (GetGameTimer() - herdingStartTime) > (Config.HerdingTimeout * 1000) then
                 TriggerEvent('rsg-ranch:client:stopHerding')
-                lib.notify({ title = locale('cl_herding_title_67'), description = locale('cl_herding_description_68'), type = 'inform' })
+                RSGCore.Functions.Notify({ title = locale('cl_herding_title_67'), description = locale('cl_herding_description_68'), type = 'inform' })
                 break
             end
             
@@ -671,7 +670,7 @@ function StartHerding(animals, herdType)
     end)
     
     -- Show herding instructions
-    lib.notify({
+    RSGCore.Functions.Notify({
         title = locale('cl_herding_title_69'),
         description = locale('cl_herding_description_70'),
         type = 'inform',
@@ -680,10 +679,10 @@ function StartHerding(animals, herdType)
 end
 
 function UpdateHerdingMovement()
-    if not herdingActive or not cache.ped then return end
+    if not herdingActive or not PlayerPedId() then return end
     
-    local playerPos = GetEntityCoords(cache.ped)
-    local playerSpeed = GetEntitySpeed(cache.ped)
+    local playerPos = GetEntityCoords(PlayerPedId())
+    local playerSpeed = GetEntitySpeed(PlayerPedId())
     
     -- Update animal movement
     local animalIndex = 0
@@ -720,7 +719,7 @@ function UpdateHerdingMovement()
     
     if remainingAnimals == 0 then
         TriggerEvent('rsg-ranch:client:stopHerding')
-        lib.notify({ title = locale('cl_herding_title_71'), description = locale('cl_herding_description_72'), type = 'inform' })
+        RSGCore.Functions.Notify({ title = locale('cl_herding_title_71'), description = locale('cl_herding_description_72'), type = 'inform' })
     end
 end
 
@@ -746,9 +745,9 @@ RegisterCommand('herdselectstatus', function()
     end
     
     if selectedCount == 0 then
-        lib.notify({ title = locale('cl_herding_title_73'), description = locale('cl_herding_description_74'), type = 'inform' })
+        RSGCore.Functions.Notify({ title = locale('cl_herding_title_73'), description = locale('cl_herding_description_74'), type = 'inform' })
     else
-        lib.notify({ 
+        RSGCore.Functions.Notify({ 
             title = locale('cl_herding_title_75'), 
             description = locale('cl_herding_description_76'):format(selectedCount),
             type = 'inform',
@@ -767,13 +766,13 @@ RegisterCommand('herdclear', function()
     
     if clearedCount > 0 then
         selectedAnimals = {}
-        lib.notify({ 
+        RSGCore.Functions.Notify({ 
             title = locale('cl_herding_title_77'), 
             description = locale('cl_herding_description_78'):format(clearedCount),
             type = 'success'
         })
     else
-        lib.notify({ title = locale('cl_herding_title_79'), description = locale('cl_herding_description_80'), type = 'inform' })
+        RSGCore.Functions.Notify({ title = locale('cl_herding_title_79'), description = locale('cl_herding_description_80'), type = 'inform' })
     end
 end, false)
 

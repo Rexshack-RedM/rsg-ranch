@@ -1,5 +1,4 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
-lib.locale()
 
 ---------------------------------------------
 -- helper: is this player ranch staff for a given ranchid (or any ranch if ranchid omitted)
@@ -93,25 +92,25 @@ RegisterNetEvent('rsg-ranch:server:placeSupplyOrder', function(itemName, amount)
 
     if not Config.OrderSupplies.Enabled then return end
     if not Player or not isPlayerRanchStaffFor(Player) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_orders_description_1')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_orders_description_1')})
         return
     end
 
     -- trainees can't spend ranch money on supplies (the menu hides it, enforce it here)
     if Player.PlayerData.job.grade.level < 1 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_orders_description_1')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_orders_description_1')})
         return
     end
 
     local ranchid = Player.PlayerData.job.name
     if not isNearOwnRanch(src, ranchid) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_not_near_ranch')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_not_near_ranch')})
         return
     end
 
     local supplyItem = GetOrderSupplyItem(itemName)
     if not supplyItem or not RSGCore.Shared.Items[supplyItem.item] then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_orders_description_2')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_orders_description_2')})
         return
     end
 
@@ -124,14 +123,14 @@ RegisterNetEvent('rsg-ranch:server:placeSupplyOrder', function(itemName, amount)
     -- Cap total queued orders per ranch so the order book can't grow unbounded
     local pendingCount = MySQL.query.await('SELECT COUNT(*) as count FROM rsg_ranch_orders WHERE ranchid = ?', {ranchid})
     if pendingCount and pendingCount[1] and pendingCount[1].count >= (Config.OrderSupplies.MaxPendingOrdersPerRanch or 30) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_orders_description_3')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_orders_description_3')})
         return
     end
 
     local totalPrice = supplyItem.price * amount
 
     if not Player.Functions.RemoveMoney('cash', totalPrice, 'ranch-supply-order') then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_orders_description_4'):format(totalPrice)})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_orders_description_4'):format(totalPrice)})
         return
     end
 
@@ -139,7 +138,7 @@ RegisterNetEvent('rsg-ranch:server:placeSupplyOrder', function(itemName, amount)
     if not orderid then
         -- refund since the order failed to be created
         Player.Functions.AddMoney('cash', totalPrice, 'ranch-supply-order-refund')
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_orders_description_5')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_orders_description_5')})
         return
     end
 
@@ -157,11 +156,11 @@ RegisterNetEvent('rsg-ranch:server:placeSupplyOrder', function(itemName, amount)
             print('^1[ERROR]^7 Failed to insert supply order: ' .. tostring(insertResult))
         end
         Player.Functions.AddMoney('cash', totalPrice, 'ranch-supply-order-refund')
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_orders_description_6')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_orders_description_6')})
         return
     end
 
-    TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('sv_orders_description_7'):format(amount, supplyItem.label, totalPrice)})
+    TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'success', description = locale('sv_orders_description_7'):format(amount, supplyItem.label, totalPrice)})
 
     if Config.Debug then
         print('^2[ORDERS]^7 Player ' .. src .. ' ordered ' .. amount .. 'x ' .. supplyItem.item .. ' for ranch ' .. ranchid .. ' (order ' .. orderid .. ')')
@@ -206,7 +205,7 @@ RegisterNetEvent('rsg-ranch:server:collectSupplyOrder', function(orderid)
     local Player = RSGCore.Functions.GetPlayer(src)
 
     if not Player or not isPlayerRanchStaffFor(Player) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_orders_description_8')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_orders_description_8')})
         return
     end
 
@@ -214,28 +213,28 @@ RegisterNetEvent('rsg-ranch:server:collectSupplyOrder', function(orderid)
 
     local orderRows = MySQL.query.await('SELECT orderid, ranchid, item, amount, ready_at FROM rsg_ranch_orders WHERE orderid = ?', {orderid})
     if not orderRows or #orderRows == 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_orders_description_9')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_orders_description_9')})
         return
     end
     local order = orderRows[1]
 
     if order.ranchid ~= Player.PlayerData.job.name then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_orders_description_10')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_orders_description_10')})
         return
     end
 
     if not isNearOwnRanch(src, order.ranchid) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_not_near_ranch')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_not_near_ranch')})
         return
     end
 
     if order.ready_at > os.time() then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_orders_description_11')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_orders_description_11')})
         return
     end
 
     if not exports['rsg-inventory']:CanAddItem(src, order.item, order.amount) then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_orders_description_12')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_orders_description_12')})
         return
     end
 
@@ -243,7 +242,7 @@ RegisterNetEvent('rsg-ranch:server:collectSupplyOrder', function(orderid)
     -- staff (or a spam-fired event) can't both collect it
     local deleted = MySQL.update.await('DELETE FROM rsg_ranch_orders WHERE orderid = ?', {orderid})
     if not deleted or deleted <= 0 then
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_orders_description_9')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_orders_description_9')})
         return
     end
 
@@ -252,12 +251,12 @@ RegisterNetEvent('rsg-ranch:server:collectSupplyOrder', function(orderid)
         MySQL.insert('INSERT INTO rsg_ranch_orders (orderid, ranchid, citizenid, item, amount, price, ordered_at, ready_at) VALUES (?, ?, ?, ?, ?, 0, ?, ?)', {
             order.orderid, order.ranchid, Player.PlayerData.citizenid, order.item, order.amount, os.time(), order.ready_at
         })
-        TriggerClientEvent('ox_lib:notify', src, {type = 'error', description = locale('sv_orders_description_12')})
+        TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_orders_description_12')})
         return
     end
 
 
-    TriggerClientEvent('ox_lib:notify', src, {type = 'success', description = locale('sv_orders_description_13'):format(order.amount, RSGCore.Shared.Items[order.item] and RSGCore.Shared.Items[order.item].label or order.item)})
+    TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'success', description = locale('sv_orders_description_13'):format(order.amount, RSGCore.Shared.Items[order.item] and RSGCore.Shared.Items[order.item].label or order.item)})
 
     if Config.Debug then
         print('^2[ORDERS]^7 Player ' .. src .. ' collected order ' .. orderid .. ' (' .. order.amount .. 'x ' .. order.item .. ') for ranch ' .. order.ranchid)

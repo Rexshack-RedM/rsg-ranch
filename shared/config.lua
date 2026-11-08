@@ -1,5 +1,4 @@
 Config = {}
-lib.locale() -- labels below are translated through locales/*.json
 
 ---------------------------------
 -- debug settings

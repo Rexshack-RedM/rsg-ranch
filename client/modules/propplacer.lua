@@ -1,4 +1,3 @@
-lib.locale()
 
 ---------------------------------------------
 -- Shared prop placement system
@@ -102,7 +101,7 @@ end
 -- Keeps the placement point tethered to the player - stops someone "placing" a prop
 -- across the map just by aiming the camera at distant terrain.
 local function ClampToPlayer(coords, maxDistance)
-    local playerCoords = GetEntityCoords(cache.ped)
+    local playerCoords = GetEntityCoords(PlayerPedId())
     local flat = vector3(coords.x, coords.y, playerCoords.z)
     local dist = #(flat - playerCoords)
     if dist <= maxDistance or dist <= 0.0 then return coords end
@@ -123,7 +122,7 @@ end
 ---------------------------------------------
 function StartPropPlacement(propmodel, opts)
     if placementActive then return false end
-    if not DoesEntityExist(cache.ped) then return false end
+    if not DoesEntityExist(PlayerPedId()) then return false end
 
     opts = opts or {}
     if type(opts.onConfirm) ~= 'function' then return false end
@@ -133,10 +132,10 @@ function StartPropPlacement(propmodel, opts)
 
     placementActive = true
 
-    lib.requestModel(propModel, 5000)
+    exports['rsg-core']:RequestModel(propModel, 5000)
     if not HasModelLoaded(propModel) then
         placementActive = false
-        lib.notify({ title = locale('cl_propplacer_title_1'), description = locale('cl_propplacer_description_2'), type = 'error' })
+        exports['rsg-core']:Notify({ title = locale('cl_propplacer_title_1'), description = locale('cl_propplacer_description_2'), type = 'error' })
         return false
     end
 
@@ -156,7 +155,7 @@ function StartPropPlacement(propmodel, opts)
     if not hit then
         placementActive = false
         SetModelAsNoLongerNeeded(propModel)
-        lib.notify({ title = locale('cl_propplacer_title_3'), description = locale('cl_propplacer_description_4'), type = 'error' })
+        exports['rsg-core']:Notify({ title = locale('cl_propplacer_title_3'), description = locale('cl_propplacer_description_4'), type = 'error' })
         return false
     end
 
@@ -221,7 +220,7 @@ end
 
 exports('StartPropPlacement', StartPropPlacement)
 
--- Lets other modules (e.g. to disable a "Move" ox_target option while a placement
+-- Lets other modules (e.g. to disable a "Move" rsg-target option while a placement
 -- of any kind is already in progress) check placer state without their own flag.
 function IsPropPlacementActive()
     return placementActive
