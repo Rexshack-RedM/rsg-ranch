@@ -177,7 +177,7 @@ local function LoadRanchOwners()
 end
 
 CreateThread(function()
-    InstallDatabaseTables()
+    if Config.AutoDatabase ~= false then InstallDatabaseTables() end
     LoadRanchOwners()
     EnsureAllGeneralStorages()
 end)

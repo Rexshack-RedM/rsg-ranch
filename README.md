@@ -235,3 +235,6 @@ If you enjoy this script and want to support its development:
 
 Optional. With `rsg-skills` started (`Config.Skills`), selling animals awards ranching XP (`SellXP` per animal) and the skill's `sell_bonus` perk raises the cash paid (`SellBonus`). It applies to sale-point sales, bulk herd sales and direct ranch sales. Set `Config.Skills.Enabled = false` to turn it off.
 
+## Database
+
+Tables (`rsg_ranch_wellpumps`, `rsg_ranch_animals`, `rsg_ranch_feedtroughs`, `rsg_ranch_storages`, `rsg_ranch_owners`, `rsg_ranch_watertroughs`, `rsg_ranch_orders`, `rsg_ranch_chickencoops`, `rsg_ranch_settings`, `rsg_ranch_custom`) are created automatically on first start while `Config.AutoDatabase = true` (default); the database user needs `CREATE` permission. To install manually, set `Config.AutoDatabase = false` in the config and import `installation/rsg-ranch.sql` once.

@@ -132,16 +132,18 @@ end
 -- database
 ---------------------------------
 CreateThread(function()
-    MySQL.query.await([[
-        CREATE TABLE IF NOT EXISTS `rsg_ranch_wellpumps` (
-            `id` INT(11) NOT NULL AUTO_INCREMENT,
-            `citizenid` VARCHAR(50) NOT NULL,
-            `x` FLOAT NOT NULL, `y` FLOAT NOT NULL, `z` FLOAT NOT NULL, `h` FLOAT NOT NULL DEFAULT 0,
-            `placed_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (`id`),
-            KEY `citizenid` (`citizenid`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ]])
+    if Config.AutoDatabase ~= false then
+        MySQL.query.await([[
+            CREATE TABLE IF NOT EXISTS `rsg_ranch_wellpumps` (
+                `id` INT(11) NOT NULL AUTO_INCREMENT,
+                `citizenid` VARCHAR(50) NOT NULL,
+                `x` FLOAT NOT NULL, `y` FLOAT NOT NULL, `z` FLOAT NOT NULL, `h` FLOAT NOT NULL DEFAULT 0,
+                `placed_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`),
+                KEY `citizenid` (`citizenid`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        ]])
+    end
     local rows = MySQL.query.await('SELECT * FROM rsg_ranch_wellpumps') or {}
     for _, r in ipairs(rows) do
         Pumps[r.id] = { id = r.id, citizenid = r.citizenid, x = r.x, y = r.y, z = r.z, h = r.h }
