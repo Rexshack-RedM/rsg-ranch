@@ -210,6 +210,9 @@ Every admin action is re-checked on the server and printed to the server console
 
 ## Changelog
 
+**3.3.0**
+- Optional rsg-skills integration: ranching XP and `sell_bonus` perk on animal sales (`Config.Skills`).
+
 ### 3.1.1
 - **Security:** the ranch Market (sell / slaughter) now checks the `canSell` permission on the server. Ranch Hands could previously sell or slaughter the owner's livestock for their own cash; the Market tab is now hidden for grades without `canSell`.
 - **Security:** animal spawn requests take the model and position from the database. A client could previously register a fake animal with any model and coordinates and have it broadcast to nearby players.
@@ -227,3 +230,8 @@ If you enjoy this script and want to support its development:
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-support-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/rexshack)
 
 ☕ **https://buymeacoffee.com/rexshack**
+
+## rsg-skills integration
+
+Optional. With `rsg-skills` started (`Config.Skills`), selling animals awards ranching XP (`SellXP` per animal) and the skill's `sell_bonus` perk raises the cash paid (`SellBonus`). It applies to sale-point sales, bulk herd sales and direct ranch sales. Set `Config.Skills.Enabled = false` to turn it off.
+

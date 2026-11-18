@@ -24,3 +24,8 @@ Context menus and alert dialogs are this resource's own NUI (`client/menu.lua` �
 
 ## Changelog
 - **3.2.0** — Migrated off ox_lib to rsg-core (locales, notify, callbacks, cron, progress bar, text UI, model loading); ox_target → rsg-target; rsg-multijob exports → rsg-core multijob functions.
+
+## rsg-skills integration
+
+`Config.Skills = { Enabled, Skill, SellXP, SellBonus }`. The global table `RanchSkills` (top of `server/server.lua`, a table because the file is close to Lua's local-variable limit) has `Active()`, `Price(src, price)` and `SoldXP(src, count)`. `Price` multiplies the server-computed price by `1 + GetPerk(src, 'ranching', 'sell_bonus') / 100`, rounded to the cent, before the money is paid and shown. `SoldXP` calls `AddXP(src, 'ranching', SellXP * count, 'ranch animal sale')`. The `extra_yield` perk is not applied by this script. Skipped when rsg-skills is not started.
+

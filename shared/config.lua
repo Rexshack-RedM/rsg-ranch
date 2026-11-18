@@ -777,3 +777,11 @@ Config.SalePointLocations = {
 	--]]
 
 }
+
+-- rsg-skills integration (optional). Needs the rsg-skills resource; does nothing when it is not started.
+Config.Skills = {
+    Enabled   = true,
+    Skill     = 'ranching', -- skill key in rsg-skills
+    SellXP    = 5,          -- XP per animal sold (rsg-skills applies its own multipliers and cap)
+    SellBonus = true,       -- the skill's sell_bonus perk (%) raises the cash paid for animals
+}
