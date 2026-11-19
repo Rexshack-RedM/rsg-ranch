@@ -101,7 +101,7 @@ A full NUI dashboard opened at the ranch NPC, with tabs for:
 
 6. **Language** (optional). Set your language in `server.cfg`:
    ```cfg
-   setr ox:locale "en"   # en, de, el, es, fr, ja, nl, pl, pt-br, ro
+   setr ox:locale "en"   # en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru
    ```
 
 7. Restart the server.
