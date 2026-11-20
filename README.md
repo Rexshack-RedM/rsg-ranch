@@ -35,7 +35,7 @@ A full NUI dashboard opened at the ranch NPC, with tabs for:
 - Place **feed troughs** and **water troughs** anywhere on the ranch. Animals feed and drink from them automatically when they get hungry or thirsty.
 - Refill feed troughs with **feed bags** and water troughs with a **full water bucket**.
 - Move or remove troughs at any time.
-- Deployable **well pumps** for filling empty buckets.
+- Water buckets are filled at **rsg-wellpump** pumps (a separate resource that also handles bucket uses).
 - You can also send an individual animal to the nearest trough from its action menu.
 
 ### Breeding and produce
@@ -67,6 +67,7 @@ A full NUI dashboard opened at the ranch NPC, with tabs for:
 | [rsg-core](https://github.com/Rexshack-RedM/rsg-core) | Framework, locales, callbacks, notifications, progress bar, text UI, cron |
 | [rsg-inventory](https://github.com/Rexshack-RedM/rsg-inventory) | Items and stashes |
 | [rsg-target](https://github.com/Rexshack-RedM/rsg-target) | NPC, animal and prop interactions |
+| [rsg-wellpump](https://github.com/Rexshack-RedM/rsg-wellpump) | Well pumps and the water bucket (uses) |
 | [oxmysql](https://github.com/overextended/oxmysql) | Database |
 
 ---
@@ -79,6 +80,7 @@ A full NUI dashboard opened at the ranch NPC, with tabs for:
    ensure rsg-target
    ensure rsg-core
    ensure rsg-inventory
+   ensure rsg-wellpump
    ensure rsg-ranch
    ```
 
@@ -118,8 +120,8 @@ Everything is in `shared/config.lua`, and each option has a comment explaining i
 | **Ranches** | `Config.RanchLocations` (name, NPC, blip, spawnpoint, price), `Config.RanchBossGrade`, `Config.RanchSellRefundPercentage`, `Config.RanchMenuDistance`, `Config.RanchConsentTimeout` |
 | **Storage** | `Config.RanchStorageSizes`, `Config.MaxAdditionalStorages`, `Config.RanchStorageAccessLevels`, `Config.StorageMinJobGrade` |
 | **Survival** | `Config.AnimalCronJob`, `Config.AnimalFeedWaterCronJob`, `Config.HungerDecayRate`, `Config.ThirstDecayRate`, `Config.HealthDecayRate`, `Config.HealthRegenerationRate` |
-| **Troughs** | `Config.FeedTroughUses`, `Config.FeedTroughRefillPerBagUse`, `Config.FeedTroughHungerThreshold`, the matching `Config.WaterTrough*` options, `Config.BucketUses` |
-| **Well pump** | `Config.WellPump` (items, timings, max per player, owner-only packing) |
+| **Troughs** | `Config.FeedTroughUses`, `Config.FeedTroughRefillPerBagUse`, `Config.FeedTroughHungerThreshold`, the matching `Config.WaterTrough*` options |
+| **Well pump** | Moved to rsg-wellpump (`Config.Item`, `Config.BucketUses`, timings, max per player, owner-only packing) |
 | **Chickens** | `Config.ChickenBuyPrice`, `Config.MaxChickensPerCoop`, `Config.EggProductionInterval`, `Config.ChickenEggChance`, `Config.ChickenCoopFeedDecayInterval` |
 | **Buying** | `Config.BullBuyPrice` / `CowBuyPrice` / `PigBuyPrice` / `SheepBuyPrice`, `Config.LivestockDeliveryPrice`, `Config.PigDeliveryOnly`, `Config.PigChooseGenderOnBuy`, `Config.BuyPointLocations` |
 | **Selling** | `Config.BaseSellPrices`, `Config.AgePricing`, `Config.MinAgeToSell`, `Config.PrimeAgeStart` / `PrimeAgeEnd` / `OldAgeStart`, `Config.SalePointLocations`, `Config.RequireAnimalPresent` |
@@ -154,7 +156,7 @@ Everything is in `shared/config.lua`, and each option has a comment explaining i
 ### Day-to-day care
 - Order **feed troughs**, **water troughs** and **feed bags** from the Supplies tab, then use the items to place them. Rotate with the arrow keys, confirm with **E** and cancel with **Backspace**.
 - Keep troughs topped up. Look at a trough to refill, move or remove it.
-- Fill buckets at a **well pump** (place one with the `ranch_wellpump` item), then use the full bucket on a water trough.
+- Fill buckets at a **well pump** (place one with the `ranch_wellpump` or `tool_wellpump` item, handled by rsg-wellpump), then use the full bucket on a water trough.
 - Look at an animal to check its stats, make it follow you, send it to a trough, collect its produce, or find a breeding partner.
 
 ### Chickens
@@ -237,4 +239,4 @@ Optional. With `rsg-skills` started (`Config.Skills`), selling animals awards ra
 
 ## Database
 
-Tables (`rsg_ranch_wellpumps`, `rsg_ranch_animals`, `rsg_ranch_feedtroughs`, `rsg_ranch_storages`, `rsg_ranch_owners`, `rsg_ranch_watertroughs`, `rsg_ranch_orders`, `rsg_ranch_chickencoops`, `rsg_ranch_settings`, `rsg_ranch_custom`) are created automatically on first start while `Config.AutoDatabase = true` (default); the database user needs `CREATE` permission. To install manually, set `Config.AutoDatabase = false` in the config and import `installation/rsg-ranch.sql` once.
+Tables (`rsg_ranch_animals`, `rsg_ranch_feedtroughs`, `rsg_ranch_storages`, `rsg_ranch_owners`, `rsg_ranch_watertroughs`, `rsg_ranch_orders`, `rsg_ranch_chickencoops`, `rsg_ranch_settings`, `rsg_ranch_custom`) are created automatically on first start while `Config.AutoDatabase = true` (default); the database user needs `CREATE` permission. To install manually, set `Config.AutoDatabase = false` in the config and import `installation/rsg-ranch.sql` once.

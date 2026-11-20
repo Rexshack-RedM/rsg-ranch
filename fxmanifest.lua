@@ -3,7 +3,7 @@ rdr3_warning 'I acknowledge that this is a prerelease build of RedM, and I am aw
 game 'rdr3'
 
 description 'rsg-ranch'
-version '3.3.1'
+version '3.4.0'
 
 shared_scripts {
     '@rsg-core/shared/locale.lua',
@@ -22,7 +22,6 @@ server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'server/server.lua',
     'server/modules/orders.lua',
-    'server/modules/wellpump.lua',
     'server/modules/admin.lua',
     'server/versionchecker.lua',
     'server/exports.lua'
@@ -32,6 +31,7 @@ dependencies {
     'rsg-core',
     'rsg-inventory',
     'rsg-target',
+    'rsg-wellpump',
     'oxmysql',
 }
 

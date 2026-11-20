@@ -183,13 +183,3 @@ CREATE TABLE IF NOT EXISTS `rsg_ranch_custom` (
   `created_at` int(10) unsigned DEFAULT NULL,
   PRIMARY KEY (`ranchid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Well pumps (placed with the pump item, also created by server/modules/wellpump.lua)
-CREATE TABLE IF NOT EXISTS `rsg_ranch_wellpumps` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `citizenid` varchar(50) NOT NULL,
-  `x` float NOT NULL, `y` float NOT NULL, `z` float NOT NULL, `h` float NOT NULL DEFAULT 0,
-  `placed_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`),
-  KEY `citizenid` (`citizenid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

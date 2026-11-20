@@ -125,27 +125,10 @@ Config.WanderPositionSaveInterval = 30000 -- How often (ms) a freely wandering a
 ---------------------------------
 -- animal feed/water settings
 ---------------------------------
-Config.WaterItem = 'fullbucket' -- full water bucket used to refill water troughs (filled at a well pump, e.g. rsg-farming)
-Config.WaterReturnItem = 'bucket' -- empty bucket given back when a full bucket runs out of uses (false to disable)
-Config.BucketUses = 5 -- uses a full bucket gets when filled at a well pump (each trough refill uses one)
+Config.WaterItem = 'fullbucket' -- full water bucket used to refill water troughs (filled at a rsg-wellpump pump; must match rsg-wellpump's Config.FullItem)
 
--- Deployable well pump (same as rsg-farming): place it, fill empty buckets, pack it up later
-Config.WellPump = {
-    item             = 'ranch_wellpump',    -- usable item that places the pump (own name so it doesn't clash with rsg-farming's tool_wellpump)
-    prop             = 'p_wellpumpnbx01x',
-    emptyItem        = 'bucket',             -- required to fill
-    fullItem         = 'fullbucket',         -- given after filling (Config.BucketUses uses)
-    fillTime         = 6000,                 -- ms
-    packTime         = 4000,                 -- ms
-    fillScenario     = 'WORLD_HUMAN_BUCKET_FILL',
-    packScenario     = 'WORLD_HUMAN_CROUCH_INSPECT',
-    maxPerPlayer     = 2,
-    minDistance      = 2.0,                  -- min distance between two pumps
-    interactDist     = 2.0,
-    placeMaxDistance = 6.0,                  -- how far from the player the gizmo can place
-    renderDistance   = 60.0,                 -- prop spawn / despawn distance
-    ownerOnlyPackup  = true,                 -- only the placer can pack it up
-}
+-- Well pumps, filling buckets and the uses on a full bucket are handled by rsg-wellpump.
+-- Pumps placed with the old ranch pump are imported automatically the first time rsg-wellpump starts.
 
 ---------------------------------
 -- feed trough settings (animal feeding)

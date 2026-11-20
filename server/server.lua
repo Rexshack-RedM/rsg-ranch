@@ -1568,8 +1568,7 @@ RegisterNetEvent('rsg-ranch:server:refillWaterTrough', function(watertroughid)
 
     if not watertroughid then return end
 
-    local bucket = Player.Functions.GetItemByName(Config.WaterItem)
-    if not bucket then
+    if not Player.Functions.GetItemByName(Config.WaterItem) then
         TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_62')})
         return
     end
@@ -1604,10 +1603,9 @@ RegisterNetEvent('rsg-ranch:server:refillWaterTrough', function(watertroughid)
     -- Take the bucket use FIRST and only refill if it actually came off. The old
     -- order refilled the trough and then removed the bucket without checking,
     -- so spam-firing the event with one bucket gave several free refills.
-    local maxUses = Config.BucketUses or 5
-    local info = bucket.info or {}
-    local bucketUses = tonumber(info.uses) or maxUses
-    if not exports['rsg-inventory']:RemoveItem(src, Config.WaterItem, 1, bucket.slot, 'rsg-ranch:trough-refill') then
+    -- rsg-wellpump owns the bucket: take it, do our work, then commit (one use less) or refund.
+    local tookBucket, ticket = exports['rsg-wellpump']:TakeBucketUse(src)
+    if not tookBucket then
         TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_62')})
         return
     end
@@ -1618,22 +1616,12 @@ RegisterNetEvent('rsg-ranch:server:refillWaterTrough', function(watertroughid)
 
     if not updateSuccess or not rowsAffected or rowsAffected <= 0 then
         -- give the bucket back exactly as it was
-        exports['rsg-inventory']:AddItem(src, Config.WaterItem, 1, info, bucket.slot, 'rsg-ranch:trough-refill-refund')
+        exports['rsg-wellpump']:RefundBucketUse(src, ticket)
         TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_68')})
         return
     end
 
-    if bucketUses <= 1 then
-        if Config.WaterReturnItem then
-            exports['rsg-inventory']:AddItem(src, Config.WaterReturnItem, 1, nil, nil, 'rsg-ranch:trough-refill-empty')
-        end
-    else
-        local newInfo = {}
-        for k, v in pairs(info) do newInfo[k] = v end
-        newInfo.uses = bucketUses - 1
-        newInfo.description = locale('sv_bucket_uses'):format(newInfo.uses, maxUses)
-        exports['rsg-inventory']:AddItem(src, Config.WaterItem, 1, newInfo, bucket.slot, 'rsg-ranch:trough-refill-use')
-    end
+    exports['rsg-wellpump']:CommitBucketUse(src, ticket)
 
     TriggerClientEvent('rsg-ranch:client:updateWaterTroughUses', -1, watertroughid, newUses)
     TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'success', description = locale('sv_server_description_69'):format(newUses, Config.WaterTroughUses)})

@@ -1,7 +1,7 @@
 # rsg-ranch — Developer Docs
 
 ## Dependencies
-`rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql`. **No ox_lib or rsg-multijob** (removed in 3.2.0; multijob is built into rsg-core).
+`rsg-core`, `rsg-inventory`, `rsg-target`, `rsg-wellpump`, `oxmysql`. **No ox_lib or rsg-multijob** (removed in 3.2.0; multijob is built into rsg-core).
 
 ## Framework APIs used (rsg-core replacements for ox_lib)
 | Purpose | Used in rsg-ranch |
@@ -13,8 +13,7 @@
 | Client callback | `rsg-ranch:client:requestConsent` via `RSGCore.Functions.CreateClientCallback`, called with `RSGCore.Functions.TriggerClientCallback` |
 | Cron | `RSGCore.Functions.CreateCron(Config.AnimalCronJob / AnimalFeedWaterCronJob / ChickenCoopFeedCronJob, job)` |
 | Models | `RSGCore.Functions.RequestModel(model, timeout)` |
-| Progress | `RSGCore.Functions.ProgressBar({...})` (well pump) |
-| Text UI | `exports['rsg-core']:DrawText(text, 'left-center')` / `HideText()` (well pump placement) |
+| Water bucket | `exports['rsg-wellpump']:TakeBucketUse / CommitBucketUse / RefundBucketUse` (water trough refills) |
 | Targeting | `exports['rsg-target']:addLocalEntity / removeLocalEntity` |
 | Multijob | `RSGCore.Functions.AddPlayerJob(citizenid, job, grade)` / `RemovePlayerJob(citizenid, job)` (wrapped as `MultijobAddJob`/`MultijobRemoveJob` in `server/server.lua`); ranch job definitions created/removed live with `RSGCore.Functions.SaveJobDefinition` / `DeleteJobDefinition` (rsg-core 3.1.6+, SQL fallback for older cores) |
 | Player ped | `PlayerPedId()` (replaces `cache.ped`) |
@@ -37,11 +36,11 @@ Generated from the source of **rsg-ranch 3.3.0**. Names, arguments and defaults 
 
 ### Dependencies
 
-`rsg-core`, `rsg-inventory`, `rsg-target`, `oxmysql`
+`rsg-core`, `rsg-inventory`, `rsg-target`, `rsg-wellpump`, `oxmysql`
 
 ### Database
 
-Tables: `rsg_ranch_wellpumps`, `rsg_ranch_animals`, `rsg_ranch_feedtroughs`, `rsg_ranch_storages`, `rsg_ranch_owners`, `rsg_ranch_watertroughs`, `rsg_ranch_orders`, `rsg_ranch_chickencoops`, `rsg_ranch_settings`, `rsg_ranch_custom`.
+Tables: `rsg_ranch_animals`, `rsg_ranch_feedtroughs`, `rsg_ranch_storages`, `rsg_ranch_owners`, `rsg_ranch_watertroughs`, `rsg_ranch_orders`, `rsg_ranch_chickencoops`, `rsg_ranch_settings`, `rsg_ranch_custom`.
 
 Tables are created automatically on start while `Config.AutoDatabase = true` (default). Nothing is ever dropped or overwritten.
 For a manual install set `Config.AutoDatabase = false` and import `installation/rsg-ranch.sql` once.
@@ -99,10 +98,7 @@ Config.AutoDatabase = true -- false = import the SQL file yourself
 | `Config.WanderMoveTimeMax` | `15000` | Maximum time (ms) spent moving |
 | `Config.WanderCheckInterval` | `2000` | How often to update wander behavior (ms) |
 | `Config.WanderPositionSaveInterval` | `30000` | How often (ms) a freely wandering animal's position is synced back to the database, so a script/server restart |
-| `Config.WaterItem` | `'fullbucket'` | full water bucket used to refill water troughs (filled at a well pump, e.g. rsg-farming) |
-| `Config.WaterReturnItem` | `'bucket'` | empty bucket given back when a full bucket runs out of uses (false to disable) |
-| `Config.BucketUses` | `5` | uses a full bucket gets when filled at a well pump (each trough refill uses one) |
-| `Config.WellPump` | `table` | Deployable well pump (same as rsg-farming): place it, fill empty buckets, pack it up later |
+| `Config.WaterItem` | `'fullbucket'` | full water bucket used to refill water troughs (filled at an rsg-wellpump pump; must match rsg-wellpump's `Config.FullItem`). The bucket's uses and the empty bucket handed back are set in rsg-wellpump |
 | `Config.FeedTroughItem` | `'feedtrough'` | item used to place a feed trough |
 | `Config.FeedTroughModel` | ``p_feedtroughsml01x`` | prop model used for placed feed troughs |
 | `Config.FeedTroughUses` | `100` | number of times a feed trough can be fed from before it is removed |
@@ -237,11 +233,6 @@ local result = exports['rsg-ranch']:isPlayerRanchStaff(playerId)
 | `rsg-ranch:admin:action` | server | `src, ranchid, kind, data` | `server/modules/admin.lua` |
 | `rsg-ranch:admin:searchPlayers` | server | `src, query` | `server/modules/admin.lua` |
 | `rsg-ranch:server:getSupplyOrders` | server | `source, cb, ranchid` | `server/modules/orders.lua` |
-| `rsg-ranch:server:getPumps` | server | `` | `server/modules/wellpump.lua` |
-| `rsg-ranch:server:placePump` | server | `source, coords, heading` | `server/modules/wellpump.lua` |
-| `rsg-ranch:server:pumpPrecheck` | server | `source, action, pumpId` | `server/modules/wellpump.lua` |
-| `rsg-ranch:server:fillBucket` | server | `source, pumpId` | `server/modules/wellpump.lua` |
-| `rsg-ranch:server:packPump` | server | `source, pumpId` | `server/modules/wellpump.lua` |
 | `rsg-ranch:server:getranchstorages` | server | `source, cb, ranchid` | `server/server.lua` |
 | `rsg-ranch:server:getChickenCoopStatus` | server | `source, cb, coopid` | `server/server.lua` |
 | `rsg-ranch:server:countanimals` | server | `src, cb, ranchid` | `server/server.lua` |
@@ -324,8 +315,6 @@ Server events can be fired by any client, so every handler re-validates the play
 | `rsg-ranch:client:spawnWaterTrough` | client | `data` | `client/modules/watertroughs.lua` |
 | `rsg-ranch:client:removeWaterTrough` | client | `watertroughid` | `client/modules/watertroughs.lua` |
 | `rsg-ranch:client:updateWaterTroughUses` | client | `watertroughid, uses` | `client/modules/watertroughs.lua` |
-| `rsg-ranch:client:syncPumps` | client | `` | `client/modules/wellpump.lua` |
-| `rsg-ranch:client:placePump` | client | `` | `client/modules/wellpump.lua` |
 | `rsg-ranch:server:placeSupplyOrder` | server | `itemName, amount` | `server/modules/orders.lua` |
 | `rsg-ranch:server:collectSupplyOrder` | server | `orderid` | `server/modules/orders.lua` |
 | `rsg-ranch:server:openranchstorage` | server | `data` | `server/server.lua` |
