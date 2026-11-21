@@ -49,7 +49,7 @@ A full NUI dashboard opened at the ranch NPC, with tabs for:
 - Coops need feeding with feed bags. Leave them unfed too long and the chickens starve.
 
 ### Herding and selling
-- `/herd` opens the herding menu. You can herd by distance, by animal type, or pick individual animals.
+- `/herd` opens the herding menu (set `Config.HerdingKey` for a rebindable shortcut; needs rsg-core 3.5.0+). You can herd by distance, by animal type, or pick individual animals.
 - Herd cattle to a **Livestock Market** sale point to sell them, one at a time or all at once.
 - Prices depend on age: young, prime, adult or old. Prime-age animals fetch the most.
 
@@ -128,7 +128,7 @@ Everything is in `shared/config.lua`, and each option has a comment explaining i
 | **Slaughter** | `Config.PigSlaughterYield`, `Config.CowSlaughterYield`, `Config.SheepSlaughterYield` and the joint item names |
 | **Breeding** | `Config.BreedingEnabled`, `Config.BreedingConfig`, `Config.GenderSpecificCooldowns`, `Config.MinAgeForBreeding`, health/hunger/thirst requirements, automatic breeding options |
 | **Produce** | `Config.AnimalProducts` (item, amount, production time and requirements per animal) |
-| **Herding** | `Config.HerdingEnabled`, `Config.HerdingDistance`, `Config.HerdingMaxAnimals`, `Config.HerdingTimeout`, `Config.RequireHerdingTool` |
+| **Herding** | `Config.HerdingEnabled`, `Config.HerdingDistance`, `Config.HerdingMaxAnimals`, `Config.HerdingTimeout`, `Config.RequireHerdingTool`, `Config.HerdingKey` |
 | **Staff** | `Config.StaffManagement` (min grade to manage, max employees, per-grade `Permissions`: `canSell`, `canBuy`, `canBreed`, `canCollectProducts`, `canManageStaff`, `canManageProps`) |
 | **Admin panel** | `Config.Admin` (command, permission groups, ACE, console logging) |
 | **Supplies** | `Config.OrderSupplies` (catalogue, prices, delivery times, limits) |

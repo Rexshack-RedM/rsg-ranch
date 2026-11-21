@@ -147,6 +147,7 @@ Config.AutoDatabase = true -- false = import the SQL file yourself
 | `Config.ChickenCoopFeedPerBag` | `100` | feed level restored per feed bag used to feed the coop |
 | `Config.ChickenCoopFeedCronJob` | `'*/15 * * * *'` | how often the server checks coops for feed decay/starvation (every 15 minutes) - decay itself is time-based (s |
 | `Config.HerdingEnabled` | `true` |  |
+| `Config.HerdingKey` | `''` | Default key for a rebindable shortcut that runs `/herd` (rsg-core `RegisterKey`, rsg-core 3.5.0+). `''` = unbound until the player binds it, `nil` = no key mapping |
 | `Config.HerdingDistance` | `25.0` | maximum distance to detect animals for herding |
 | `Config.HerdingMaxAnimals` | `10` | maximum number of animals that can be herded at once |
 | `Config.HerdingFollowDistance` | `3.0` | distance animals maintain while following during herding |

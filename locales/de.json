@@ -976,5 +976,6 @@
     "ui_adm_return_all": "Alle zum Spawnpunkt",
     "ui_adm_confirm_return_all": "Alle %s Tiere auf %s zum Tier-Spawnpunkt der Ranch zurückschicken?",
     "sv_adm_returned": "Tier(e) zum Spawnpunkt der Ranch zurückgebracht",
-    "sv_adm_no_spawn": "Diese Ranch hat keinen Tier-Spawnpunkt"
+    "sv_adm_no_spawn": "Diese Ranch hat keinen Tier-Spawnpunkt",
+    "cl_herding_key": "Treibmenü öffnen"
 }

@@ -976,5 +976,6 @@
     "ui_adm_return_all": "Tout renvoyer au point d'apparition",
     "ui_adm_confirm_return_all": "Renvoyer les %s animaux de %s au point d'apparition des animaux du ranch ?",
     "sv_adm_returned": "Animal(aux) renvoyé(s) au point d'apparition du ranch",
-    "sv_adm_no_spawn": "Ce ranch n'a pas de point d'apparition pour les animaux"
+    "sv_adm_no_spawn": "Ce ranch n'a pas de point d'apparition pour les animaux",
+    "cl_herding_key": "Ouvrir le menu de rassemblement"
 }

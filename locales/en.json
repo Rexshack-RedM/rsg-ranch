@@ -976,5 +976,6 @@
     "ui_adm_return_all": "Return All to Spawn",
     "ui_adm_confirm_return_all": "Send all %s animals at %s back to the ranch's animal spawn point?",
     "sv_adm_returned": "Animal(s) returned to the ranch spawn point",
-    "sv_adm_no_spawn": "This ranch has no animal spawn point set"
+    "sv_adm_no_spawn": "This ranch has no animal spawn point set",
+    "cl_herding_key": "Open herding menu"
 }

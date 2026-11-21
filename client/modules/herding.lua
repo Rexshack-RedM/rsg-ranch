@@ -778,5 +778,10 @@ end, false)
 
 -- herdblipstatus command removed
 
--- Note: Use /herd command to access herding menu
--- RegisterKeyMapping is not available in RedM
+-- /herd opens the herding menu. Optional rebindable key (rsg-core RegisterKey, rsg-core 3.5.0+): the key runs
+-- /herd, so the job and ranch checks above still apply. Empty Config.HerdingKey = unbound until the player binds it.
+if Config.HerdingKey ~= nil then
+    RSGCore.Functions.RegisterKey('rsgranch_herd', locale('cl_herding_key'), Config.HerdingKey, function()
+        ExecuteCommand('herd')
+    end)
+end

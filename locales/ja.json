@@ -976,5 +976,6 @@
     "ui_adm_return_all": "全てスポーン地点に戻す",
     "ui_adm_confirm_return_all": "%s 頭の動物（%s）を牧場の動物スポーン地点に戻しますか？",
     "sv_adm_returned": "動物を牧場のスポーン地点に戻しました",
-    "sv_adm_no_spawn": "この牧場には動物のスポーン地点が設定されていません"
+    "sv_adm_no_spawn": "この牧場には動物のスポーン地点が設定されていません",
+    "cl_herding_key": "家畜誘導メニューを開く"
 }

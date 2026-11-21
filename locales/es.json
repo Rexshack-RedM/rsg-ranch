@@ -976,5 +976,6 @@
     "ui_adm_return_all": "Devolver todos al punto de aparición",
     "ui_adm_confirm_return_all": "¿Enviar los %s animales de %s de vuelta al punto de aparición de animales del rancho?",
     "sv_adm_returned": "Animal(es) devuelto(s) al punto de aparición del rancho",
-    "sv_adm_no_spawn": "Este rancho no tiene un punto de aparición de animales"
+    "sv_adm_no_spawn": "Este rancho no tiene un punto de aparición de animales",
+    "cl_herding_key": "Abrir menú de arreo"
 }

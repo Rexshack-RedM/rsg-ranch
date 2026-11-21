@@ -2,6 +2,14 @@
 
 All notable changes to rsg-ranch. Newest first.
 
+## 3.5.0
+
+### Added
+- **Herding key:** optional rebindable key that opens the herding menu (runs `/herd`, so job and ranch checks still apply) through rsg-core `RegisterKey`. New `Config.HerdingKey` (empty by default = unbound until the player binds it in the game's key settings; `nil` disables it) and locale key `cl_herding_key` in all 11 languages. Requires rsg-core 3.5.0 or newer.
+
+### Fixed
+- Removed the outdated "RegisterKeyMapping is not available in RedM" comment.
+
 ## 3.4.0
 
 ### Changed

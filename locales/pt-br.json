@@ -976,5 +976,6 @@
     "ui_adm_return_all": "Todos ao ponto de spawn",
     "ui_adm_confirm_return_all": "Enviar todos os %s animais de %s de volta ao ponto de spawn de animais do rancho?",
     "sv_adm_returned": "Animal(is) devolvido(s) ao ponto de spawn do rancho",
-    "sv_adm_no_spawn": "Este rancho não tem ponto de spawn de animais definido"
+    "sv_adm_no_spawn": "Este rancho não tem ponto de spawn de animais definido",
+    "cl_herding_key": "Abrir menu de pastoreio"
 }

@@ -197,6 +197,7 @@ Config.ChickenCoopFeedCronJob = '*/15 * * * *' -- how often the server checks co
 -- herding system settings
 ---------------------------------
 Config.HerdingEnabled = true
+Config.HerdingKey = ''           -- default key that opens the herding menu (like /herd). '' = unbound, players bind it in the game's key settings. nil = no key mapping at all
 Config.HerdingDistance = 25.0 -- maximum distance to detect animals for herding
 Config.HerdingMaxAnimals = 10 -- maximum number of animals that can be herded at once
 Config.HerdingFollowDistance = 3.0 -- distance animals maintain while following during herding

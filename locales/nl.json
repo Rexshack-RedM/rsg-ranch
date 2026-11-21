@@ -976,5 +976,6 @@
     "ui_adm_return_all": "Alles terug naar spawnpunt",
     "ui_adm_confirm_return_all": "Alle %s dieren op %s terugsturen naar het dieren-spawnpunt van de ranch?",
     "sv_adm_returned": "Dier(en) teruggestuurd naar het spawnpunt van de ranch",
-    "sv_adm_no_spawn": "Deze ranch heeft geen dieren-spawnpunt ingesteld"
+    "sv_adm_no_spawn": "Deze ranch heeft geen dieren-spawnpunt ingesteld",
+    "cl_herding_key": "Hoedmenu openen"
 }
