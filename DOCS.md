@@ -24,6 +24,9 @@ Context menus and alert dialogs are this resource's own NUI (`client/menu.lua` �
 ## Changelog
 - **3.2.0** — Migrated off ox_lib to rsg-core (locales, notify, callbacks, cron, progress bar, text UI, model loading); ox_target → rsg-target; rsg-multijob exports → rsg-core multijob functions.
 
+## rsg-economy integration
+`RanchEcon.Quote(src, price)` calls `exports['rsg-economy']:Quote(src, { region = GetRegionAt(player coords), mode = 'sell', base = price, qty = 1, market = false })` and returns the new price plus the quote; `RanchEcon.Record(src, quote)` runs after `AddMoney`. Used in the three sale paths (`sellAnimal`, bulk herd sale, `sellAtRanch`). Region is derived server-side from the player's position. Config: `Config.Economy.Enabled`.
+
 ## rsg-skills integration
 
 `Config.Skills = { Enabled, Skill, SellXP, SellBonus }`. The global table `RanchSkills` (top of `server/server.lua`, a table because the file is close to Lua's local-variable limit) has `Active()`, `Price(src, price)` and `SoldXP(src, count)`. `Price` multiplies the server-computed price by `1 + GetPerk(src, 'ranching', 'sell_bonus') / 100`, rounded to the cent, before the money is paid and shown. `SoldXP` calls `AddXP(src, 'ranching', SellXP * count, 'ranch animal sale')`. The `extra_yield` perk is not applied by this script. Skipped when rsg-skills is not started.
@@ -147,7 +150,7 @@ Config.AutoDatabase = true -- false = import the SQL file yourself
 | `Config.ChickenCoopFeedPerBag` | `100` | feed level restored per feed bag used to feed the coop |
 | `Config.ChickenCoopFeedCronJob` | `'*/15 * * * *'` | how often the server checks coops for feed decay/starvation (every 15 minutes) - decay itself is time-based (s |
 | `Config.HerdingEnabled` | `true` |  |
-| `Config.HerdingKey` | `''` | Default key for a rebindable shortcut that runs `/herd` (rsg-core `RegisterKey`, rsg-core 3.5.0+). `''` = unbound until the player binds it, `nil` = no key mapping |
+| `Config.HerdingKey` | `''` | Default key for a rebindable shortcut that runs `/herd` (rsg-core `RegisterKey`, rsg-core 3.6.0+). `''` = unbound until the player binds it, `nil` = no key mapping |
 | `Config.HerdingDistance` | `25.0` | maximum distance to detect animals for herding |
 | `Config.HerdingMaxAnimals` | `10` | maximum number of animals that can be herded at once |
 | `Config.HerdingFollowDistance` | `3.0` | distance animals maintain while following during herding |

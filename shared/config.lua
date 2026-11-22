@@ -764,6 +764,11 @@ Config.SalePointLocations = {
 
 }
 
+-- rsg-economy integration (optional): animal sales are taxed by the town and scaled by the player's standing there.
+Config.Economy = {
+    Enabled = true,
+}
+
 -- rsg-skills integration (optional). Needs the rsg-skills resource; does nothing when it is not started.
 Config.Skills = {
     Enabled   = true,

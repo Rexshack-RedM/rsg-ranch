@@ -49,7 +49,7 @@ A full NUI dashboard opened at the ranch NPC, with tabs for:
 - Coops need feeding with feed bags. Leave them unfed too long and the chickens starve.
 
 ### Herding and selling
-- `/herd` opens the herding menu (set `Config.HerdingKey` for a rebindable shortcut; needs rsg-core 3.5.0+). You can herd by distance, by animal type, or pick individual animals.
+- `/herd` opens the herding menu (set `Config.HerdingKey` for a rebindable shortcut; needs rsg-core 3.6.0+). You can herd by distance, by animal type, or pick individual animals.
 - Herd cattle to a **Livestock Market** sale point to sell them, one at a time or all at once.
 - Prices depend on age: young, prime, adult or old. Prime-age animals fetch the most.
 
@@ -232,6 +232,9 @@ If you enjoy this script and want to support its development:
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-support-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/rexshack)
 
 ☕ **https://buymeacoffee.com/rexshack**
+
+## rsg-economy integration
+Optional. With `rsg-economy` started (`Config.Economy.Enabled`), animal sale payouts (after the skills bonus) are taxed by the town where the player stands and scaled by their standing there; the tax goes to the town treasury. Ranch purchases and ranch sale refunds are unchanged.
 
 ## rsg-skills integration
 

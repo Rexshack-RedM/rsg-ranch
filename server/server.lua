@@ -21,6 +21,26 @@ function RanchSkills.SoldXP(src, count)
     exports['rsg-skills']:AddXP(src, Config.Skills.Skill, Config.Skills.SellXP * count, 'ranch animal sale')
 end
 
+-- rsg-economy (optional): town tax + standing price modifier on animal sales (no market multiplier).
+-- Same table pattern as RanchSkills (local-variable limit). Region comes from where the player stands.
+RanchEcon = {}
+
+function RanchEcon.Quote(src, price)
+    if not (Config.Economy and Config.Economy.Enabled) or GetResourceState('rsg-economy') ~= 'started' then return price, nil end
+    local ok, q = pcall(function()
+        local region = exports['rsg-economy']:GetRegionAt(GetEntityCoords(GetPlayerPed(src)))
+        if not region then return nil end
+        return exports['rsg-economy']:Quote(src, { region = region, mode = 'sell', base = price, qty = 1, market = false })
+    end)
+    if ok and q and q.total then return math.floor(q.total * 100 + 0.5) / 100, q end
+    return price, nil
+end
+
+-- call after the money has moved so the tax lands in the town treasury
+function RanchEcon.Record(src, quote)
+    if quote then pcall(function() exports['rsg-economy']:Record(src, quote) end) end
+end
+
 -- rsg-core multijob integration (RSGCore.Functions.AddPlayerJob / RemovePlayerJob).
 -- AddPlayerJob enforces rsg-core's multijob MaxJobs and returns false, 'max_jobs'
 -- when the player is full, so no limit is duplicated here.
@@ -3554,6 +3574,8 @@ RegisterNetEvent('rsg-ranch:server:sellAnimal', function(animalid)
 
     -- Recompute the sale price server-side - never trust a client-supplied price
     local salePrice = RanchSkills.Price(src, CalculateAnimalSalePrice(animal.model, animal.age))
+    local econQ
+    salePrice, econQ = RanchEcon.Quote(src, salePrice)
 
     -- Delete animal from database
     local deleteSuccess, deleteError = pcall(function()
@@ -3570,6 +3592,7 @@ RegisterNetEvent('rsg-ranch:server:sellAnimal', function(animalid)
     
     -- Give money to player
     Player.Functions.AddMoney('cash', salePrice, 'rsg-ranch-animal-sale')
+    RanchEcon.Record(src, econQ)
     RanchSkills.SoldXP(src, 1)
     
     -- Notify player
@@ -3655,7 +3678,10 @@ local function HandleSellAllAnimals(src, animalIds)
     -- Give total money to player
     if totalValue > 0 then
         totalValue = RanchSkills.Price(src, totalValue)
+        local econQ
+        totalValue, econQ = RanchEcon.Quote(src, totalValue)
         Player.Functions.AddMoney('cash', totalValue, 'rsg-ranch-animal-sale')
+        RanchEcon.Record(src, econQ)
         RanchSkills.SoldXP(src, successCount)
     end
     
@@ -6057,12 +6083,15 @@ RegisterNetEvent('rsg-ranch:server:sellAtRanch', function(animalid)
 
     -- Price is always recomputed server-side (cows & bulls get the reduced direct-sale price)
     local salePrice = RanchSkills.Price(src, RanchDirectSalePrice(animal.model, animal.ageDays))
+    local econQ
+    salePrice, econQ = RanchEcon.Quote(src, salePrice)
 
     -- Only pay out if THIS request deleted the animal (stops spam double-sells)
     local deleted = MySQL.update.await('DELETE FROM rsg_ranch_animals WHERE animalid = ?', {animal.animalid})
     if not deleted or deleted <= 0 then return NotifyError(src, MarketMsg(251)) end
 
     Player.Functions.AddMoney('cash', salePrice, 'rsg-ranch-market-sale')
+    RanchEcon.Record(src, econQ)
     RanchSkills.SoldXP(src, 1)
     TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'success', description = MarketMsg(species.msg.sold):format(salePrice)})
     TriggerClientEvent('rsg-ranch:client:removeAnimal', -1, animal.animalid)

@@ -2,6 +2,11 @@
 
 All notable changes to rsg-ranch. Newest first.
 
+## 3.6.0
+
+### Added
+- Optional rsg-economy integration: animal sales (sale point, bulk herd, direct ranch) are quoted with town tax and the standing price modifier (no market multiplier) and recorded after payout. `Config.Economy.Enabled`.
+
 ## 3.5.0
 
 ### Added
