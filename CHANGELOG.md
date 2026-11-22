@@ -2,6 +2,12 @@
 
 All notable changes to rsg-ranch. Newest first.
 
+## 3.7.0
+
+### Changed
+- rsg-ranch now works fully with **rsg-society** (new required dependency, rsg-society 3.2.1+). Boss-only actions (storage, staff, ownership transfer) check `exports['rsg-society']:IsBoss`, and every ranch, config or admin-created, gets its own society on start. rsg-bossmenu and rsg-gangmenu are not used.
+- Removed the `RSGCore.Shared.Jobs` and direct `multijob_jobs` fallbacks. Ranch jobs are read, created and deleted only through rsg-core's job definition functions.
+
 ## 3.6.0
 
 ### Added

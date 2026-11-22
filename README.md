@@ -68,6 +68,7 @@ A full NUI dashboard opened at the ranch NPC, with tabs for:
 | [rsg-inventory](https://github.com/Rexshack-RedM/rsg-inventory) | Items and stashes |
 | [rsg-target](https://github.com/Rexshack-RedM/rsg-target) | NPC, animal and prop interactions |
 | [rsg-wellpump](https://github.com/Rexshack-RedM/rsg-wellpump) | Well pumps and the water bucket (uses) |
+| [rsg-society](https://github.com/Rexshack-RedM/rsg-society) | Ranch boss checks and each ranch's society (members, ranks, funds, storage) |
 | [oxmysql](https://github.com/overextended/oxmysql) | Database |
 
 ---
@@ -81,6 +82,7 @@ A full NUI dashboard opened at the ranch NPC, with tabs for:
    ensure rsg-core
    ensure rsg-inventory
    ensure rsg-wellpump
+   ensure rsg-society
    ensure rsg-ranch
    ```
 
@@ -91,7 +93,7 @@ A full NUI dashboard opened at the ranch NPC, with tabs for:
 
 4. **Images.** Add a PNG for each new item to `rsg-inventory/html/images/`, named after the item (for example `feedtrough.png`). The ranch menu uses these images too.
 
-5. **Jobs.** Job definitions live in rsg-core's multijob database table (`multijob_jobs`). Each ranch needs a job with the same name as its `ranchid`; `installation/shared_jobs.lua` has the six default ranch jobs to add there (or to `rsg-core/shared/jobs.lua` on older setups). Ranches created in the admin panel register their own job automatically. Every ranch job has three grades:
+5. **Jobs.** Job definitions live in rsg-core's multijob database table (`multijob_jobs`). Each ranch needs a job with the same name as its `ranchid`; `installation/shared_jobs.lua` has the six default ranch jobs to add there . Ranches created in the admin panel register their own job automatically. Every ranch also gets its own society in **rsg-society** (required), which handles ranch members, ranks, funds and storage; ranch bosses are decided by rsg-society. Every ranch job has three grades:
 
    | Grade | Name | Can do |
    |---|---|---|

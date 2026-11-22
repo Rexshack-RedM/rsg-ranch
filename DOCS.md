@@ -1,7 +1,7 @@
 # rsg-ranch — Developer Docs
 
 ## Dependencies
-`rsg-core`, `rsg-inventory`, `rsg-target`, `rsg-wellpump`, `oxmysql`. **No ox_lib or rsg-multijob** (removed in 3.2.0; multijob is built into rsg-core).
+`rsg-core`, `rsg-inventory`, `rsg-target`, `rsg-wellpump`, `rsg-society`, `oxmysql`. **No ox_lib, rsg-multijob, rsg-bossmenu or rsg-gangmenu** (removed in 3.2.0; multijob is built into rsg-core).
 
 ## Framework APIs used (rsg-core replacements for ox_lib)
 | Purpose | Used in rsg-ranch |
@@ -16,12 +16,14 @@
 | Water bucket | `exports['rsg-wellpump']:TakeBucketUse / CommitBucketUse / RefundBucketUse` (water trough refills) |
 | Targeting | `exports['rsg-target']:addLocalEntity / removeLocalEntity` |
 | Multijob | `RSGCore.Functions.AddPlayerJob(citizenid, job, grade)` / `RemovePlayerJob(citizenid, job)` (wrapped as `MultijobAddJob`/`MultijobRemoveJob` in `server/server.lua`); ranch job definitions created/removed live with `RSGCore.Functions.SaveJobDefinition` / `DeleteJobDefinition` (rsg-core 3.1.6+, SQL fallback for older cores) |
+| Society | `exports['rsg-society']:IsBoss(src, ranchid)` decides who is a ranch boss on the server (`IsRanchBoss` in `server/server.lua`, the ranch job must also be the active job). `exports['rsg-society']:EnsureJobSociety(ranchid)` gives every ranch (config and admin-created) its own society on start (treasury, members, ranks, storage, fines and audit are managed in rsg-society, not here). |
 | Player ped | `PlayerPedId()` (replaces `cache.ped`) |
 
 ## Menus / dialogs
 Context menus and alert dialogs are this resource's own NUI (`client/menu.lua` → `Menu.registerContext/showContext/hideContext/alertDialog`, `html/app.js`).
 
 ## Changelog
+- **3.7.0** — Switched fully to rsg-society: boss checks use `rsg-society:IsBoss`, every ranch gets a society, and the `RSGCore.Shared.Jobs` / `multijob_jobs` fallbacks were removed (job definitions only through `GetJobDefinition` / `SaveJobDefinition` / `DeleteJobDefinition`). rsg-society 3.2.1+ is required.
 - **3.2.0** — Migrated off ox_lib to rsg-core (locales, notify, callbacks, cron, progress bar, text UI, model loading); ox_target → rsg-target; rsg-multijob exports → rsg-core multijob functions.
 
 ## rsg-economy integration

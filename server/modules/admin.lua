@@ -60,7 +60,8 @@ local function CharName(citizenid)
 end
 
 local function GradeName(ranchid, grade)
-    local job = RSGCore.Shared.Jobs and RSGCore.Shared.Jobs[ranchid]
+    local okJ, job = pcall(RSGCore.Functions.GetJobDefinition, ranchid)
+    job = okJ and job or nil
     local g = job and job.grades and (job.grades[tostring(grade)] or job.grades[grade])
     return (g and g.name) or DefaultGradeNames[grade] or ('Grade ' .. grade)
 end
@@ -113,28 +114,19 @@ local DefaultRanchGrades = {
     ['2'] = { name = 'Ranch Manager', isboss = true, payment = 0 },
 }
 
-local function CoreJobs()
-    local ok, core = pcall(function() return exports['rsg-core']:GetCoreObject() end)
-    return ok and core and core.Shared and core.Shared.Jobs or {}
-end
-
 -- registers the ranch's job with rsg-core's multijob registry (persistent + live, no restart needed)
 local function EnsureRanchJob(ranchid, label)
     local job = { name = ranchid, label = label, type = 'rancher', defaultDuty = true, offDutyPay = false, grades = DefaultRanchGrades }
     local okGet, existing = pcall(RSGCore.Functions.GetJobDefinition, ranchid)
-    if okGet and existing then return end -- already registered; keep any edits made in the job admin
+    if okGet and existing then EnsureRanchSociety(ranchid) return end -- already registered; keep any edits made in the job admin
 
     local ok, saved, err = pcall(RSGCore.Functions.SaveJobDefinition, job)
-    if ok and saved then return end
-
-    -- registry not loaded yet (early start) or older rsg-core: fall back to table + live core job
-    print(('^3[RANCH ADMIN]^7 SaveJobDefinition(%s) unavailable (%s), using fallback'):format(ranchid, tostring(ok and err or saved)))
-    pcall(MySQL.query.await, [[INSERT IGNORE INTO multijob_jobs (name, label, type, icon, default_duty, off_duty_pay, grades) VALUES (?, ?, 'rancher', NULL, 1, 0, ?)]],
-        { ranchid, label, json.encode(DefaultRanchGrades) })
-    if not CoreJobs()[ranchid] then
-        pcall(function() return exports['rsg-core']:AddJob(ranchid, job) end)
+    if ok and saved then
+        EnsureRanchSociety(ranchid)
+        return
     end
-    RSGCore.Shared.Jobs[ranchid] = RSGCore.Shared.Jobs[ranchid] or job
+    -- registry not ready (early start): the job is retried by the caller on the next start
+    print(('^3[RANCH ADMIN]^7 SaveJobDefinition(%s) failed (%s)'):format(ranchid, tostring(ok and err or saved)))
 end
 
 local function CustomRowToRanch(row)
@@ -178,6 +170,19 @@ CreateThread(function()
         for _, row in ipairs(rows) do ApplySettingsRow(row) end
     end
     TriggerClientEvent('rsg-ranch:client:applyRanchSettings', -1, SettingsSnapshot())
+
+    -- every ranch (config + custom) gets a society in rsg-society once it is ready and the job exists
+    local waited = 0
+    while waited < 20000 do
+        local okR, ready = pcall(function() return exports['rsg-society']:IsReady() end)
+        if okR and ready then break end
+        Wait(500)
+        waited = waited + 500
+    end
+    for _, r in ipairs(Config.RanchLocations) do
+        local okJ, def = pcall(RSGCore.Functions.GetJobDefinition, r.ranchid)
+        if okJ and def then EnsureRanchSociety(r.ranchid) end
+    end
 end)
 
 RegisterCallback('rsg-ranch:server:getRanchSettings', function()
@@ -699,13 +704,7 @@ Actions.deleteRanch = function(src, ranchid)
     WipeRanch(ranchid)
     MySQL.query.await('DELETE FROM rsg_ranch_custom WHERE ranchid = ?', { ranchid })
     MySQL.query.await('DELETE FROM rsg_ranch_settings WHERE ranchid = ?', { ranchid })
-    local okDel, deleted = pcall(RSGCore.Functions.DeleteJobDefinition, ranchid)
-    if not (okDel and deleted) then
-        -- fallback for older rsg-core / registry not loaded
-        pcall(MySQL.query.await, 'DELETE FROM multijob_jobs WHERE name = ?', { ranchid })
-        pcall(MySQL.query.await, 'DELETE FROM player_jobs WHERE job = ?', { ranchid })
-        pcall(function() exports['rsg-core']:RemoveJob(ranchid) end)
-    end
+    pcall(RSGCore.Functions.DeleteJobDefinition, ranchid)
     for i, x in ipairs(Config.RanchLocations) do
         if x.ranchid == ranchid then table.remove(Config.RanchLocations, i) break end
     end
@@ -723,7 +722,7 @@ RegisterCallback('rsg-ranch:admin:createRanch', function(src, data)
     local ranchid = tostring(data.ranchid or ''):lower()
     if name == '' then return { ok = false, msg = locale('sv_adm_bad_name') } end
     if not ranchid:match('^[a-z0-9_]+$') or #ranchid < 3 or #ranchid > 40 then return { ok = false, msg = locale('sv_adm_bad_id') } end
-    if GetRanch(ranchid) or CoreJobs()[ranchid] then return { ok = false, msg = locale('sv_adm_id_taken') } end
+    if GetRanch(ranchid) or select(2, pcall(RSGCore.Functions.GetJobDefinition, ranchid)) then return { ok = false, msg = locale('sv_adm_id_taken') } end
 
     local p = AdminPos(src)
     if not p then return { ok = false, msg = locale('sv_adm_failed') } end

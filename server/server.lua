@@ -58,6 +58,22 @@ local function MultijobRemoveJob(citizenid, job)
     return ok and res
 end
 
+-- rsg-society integration: a ranch's boss is whoever holds the boss grade of the ranch job in rsg-society.
+-- The player must have the ranch job active and rsg-society must say they are boss of that society.
+local function IsRanchBoss(src, ranchid)
+    local Player = RSGCore.Functions.GetPlayer(src)
+    if not Player or type(ranchid) ~= 'string' then return false end
+    if Player.PlayerData.job.name ~= ranchid then return false end
+    local ok, boss = pcall(function() return exports['rsg-society']:IsBoss(src, ranchid) end)
+    return ok and boss == true
+end
+
+-- Makes sure the ranch job has a society (treasury, members, ranks, storage, audit in rsg-society)
+function EnsureRanchSociety(ranchid)
+    local ok, res = pcall(function() return exports['rsg-society']:EnsureJobSociety(ranchid) end)
+    return ok and res == true
+end
+
 -- Tracks consecutive ProcessAnimalSurvival cron failures (see cron job further down)
 local cronFailures = 0
 
@@ -798,7 +814,7 @@ local function HandlePurchaseRanchStorage(src, data)
     local ranchid = data.ranchid
 
     -- Must be the boss of this ranch to buy more storage
-    if Player.PlayerData.job.name ~= ranchid or Player.PlayerData.job.grade.level < Config.RanchBossGrade then
+    if not IsRanchBoss(src, ranchid) then
         TriggerClientEvent('RSGCore:Client:Notify', src, { type = 'error', description = locale('sv_server_description_4')})
         return
     end
@@ -885,7 +901,7 @@ RegisterNetEvent('rsg-ranch:server:renameranchstorage', function(data)
 
     local ranchid = data.ranchid
 
-    if Player.PlayerData.job.name ~= ranchid or Player.PlayerData.job.grade.level < Config.RanchBossGrade then
+    if not IsRanchBoss(src, ranchid) then
         TriggerClientEvent('RSGCore:Client:Notify', src, { type = 'error', description = locale('sv_server_description_12')})
         return
     end
@@ -926,7 +942,7 @@ RegisterNetEvent('rsg-ranch:server:setstorageaccess', function(data)
 
     local ranchid = data.ranchid
 
-    if Player.PlayerData.job.name ~= ranchid or Player.PlayerData.job.grade.level < Config.RanchBossGrade then
+    if not IsRanchBoss(src, ranchid) then
         TriggerClientEvent('RSGCore:Client:Notify', src, { type = 'error', description = locale('sv_server_description_17')})
         return
     end
@@ -4024,7 +4040,7 @@ local function HandlePurchaseRanch(src, ranchid)
     -- assigns them the ranch's job role as part of the purchase, so we only
     -- need to guard against someone who is already this ranch's boss buying
     -- it again.
-    if Player.PlayerData.job.name == ranchData.jobaccess and Player.PlayerData.job.grade.level >= Config.RanchBossGrade then
+    if IsRanchBoss(src, ranchData.jobaccess) then
         TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_172')})
         return
     end
@@ -4181,7 +4197,7 @@ local function HandleTransferRanch(src, ranchid, targetId)
     end
 
     -- Must be the current boss of this ranch
-    if Player.PlayerData.job.name ~= ranchid or Player.PlayerData.job.grade.level < Config.RanchBossGrade then
+    if not IsRanchBoss(src, ranchid) then
         TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_185')})
         return
     end
@@ -4335,7 +4351,7 @@ local function HandleSellRanch(src, ranchid)
     end
 
     -- Must be the current boss of this ranch
-    if Player.PlayerData.job.name ~= ranchid or Player.PlayerData.job.grade.level < Config.RanchBossGrade then
+    if not IsRanchBoss(src, ranchid) then
         TriggerClientEvent('RSGCore:Client:Notify', src, {type = 'error', description = locale('sv_server_description_199')})
         return
     end
@@ -5857,7 +5873,7 @@ RegisterNetEvent('rsg-ranch:server:promoteEmployee', function(ranchid, targetCit
         end
         
         local currentGrade = Target.PlayerData.job.grade.level
-        local maxGrade = Config.RanchBossGrade -- ranch jobs only define grades 0-2 (see installation/shared_jobs.lua)
+        local maxGrade = Config.RanchBossGrade -- ranch jobs only define grades 0-2 (see installation/shared_jobs.lua, stored in the database)
         
         -- Prevent promoting to same or higher grade than manager
         if currentGrade + 1 >= Player.PlayerData.job.grade.level and Player.PlayerData.job.grade.level < maxGrade then
