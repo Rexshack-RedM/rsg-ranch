@@ -2,7 +2,7 @@ local RSGCore = exports['rsg-core']:GetCoreObject()
 
 ---------------------------------------------
 -- Ranch management NUI
--- Replaces the old ox_lib context menus (manager / ranch hand / trainee /
+-- Replaces the old context menus (manager / ranch hand / trainee /
 -- storage / staff / supplies / slaughter house / ownership / overview).
 -- All actions still go through the existing, server-validated events.
 ---------------------------------------------

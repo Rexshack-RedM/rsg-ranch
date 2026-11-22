@@ -468,7 +468,7 @@ document.addEventListener('keydown', (e) => {
     else post('close');
 });
 
-// ---------- context menu / alert dialog (NUI replacement for ox_lib menus) ----------
+// ---------- context menu / alert dialog ----------
 let ctxMenu = null;
 let alertOpen = false;
 

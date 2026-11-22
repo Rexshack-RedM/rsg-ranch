@@ -1,5 +1,5 @@
 ---------------------------------------------
--- NUI menu layer: drop-in replacement for ox_lib context menus and alert dialogs,
+-- NUI menu layer: context menus and alert dialogs,
 -- rendered in this resource's own NUI so they match the ranch UI.
 --   Menu.registerContext(def)  Menu.showContext(id)  Menu.hideContext(onExit)
 --   Menu.getOpenContextMenu()  Menu.alertDialog(opts) -> 'confirm' | 'cancel'
