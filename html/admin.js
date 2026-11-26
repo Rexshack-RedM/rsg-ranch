@@ -40,11 +40,12 @@ function admGradeLabel(g) {
 }
 
 // Custom dropdown. Native select popups crash RedM's NUI, so never use them here.
-// A hidden input keeps the id, so $(id).value works like a select.
-function admSelect(id, options, selected, style) {
+// A hidden input keeps the id, so $(id).value works like a select. It fires 'change' when the pick changes;
+// inputAttrs adds attributes (for example data-*) to that input. Also used by app.js.
+function admSelect(id, options, selected, style, inputAttrs = '') {
     const cur = options.find((o) => String(o.value) === String(selected)) || options[0] || { value: '', label: '' };
     return `<div class="adm-select" ${style ? `style="${style}"` : ''}>
-        <input type="hidden" id="${id}" value="${esc(cur.value)}">
+        <input type="hidden" id="${esc(id)}" value="${esc(cur.value)}" ${inputAttrs}>
         <div class="adm-sel-btn"><span class="adm-sel-text">${esc(cur.label)}</span><span class="adm-sel-arrow">&#9662;</span></div>
         <div class="adm-sel-list hidden">${options.map((o) =>
             `<div class="adm-sel-opt ${String(o.value) === String(cur.value) ? 'active' : ''}" data-value="${esc(o.value)}">${esc(o.label)}</div>`).join('')}</div>
@@ -61,13 +62,18 @@ document.addEventListener('click', (e) => {
     const box = e.target.closest('.adm-select');
     document.querySelectorAll('.adm-select .adm-sel-list').forEach((l) => { if (!box || !box.contains(l)) l.classList.add('hidden'); });
     if (opt && box) {
-        box.querySelector('input').value = opt.dataset.value;
+        const input = box.querySelector('input');
+        const changed = input.value !== opt.dataset.value;
+        input.value = opt.dataset.value;
         box.querySelector('.adm-sel-text').textContent = opt.textContent;
         box.querySelectorAll('.adm-sel-opt').forEach((o) => o.classList.toggle('active', o === opt));
         box.querySelector('.adm-sel-list').classList.add('hidden');
+        if (changed) input.dispatchEvent(new Event('change'));
     } else if (btn && box) {
         box.querySelector('.adm-sel-list').classList.toggle('hidden');
     }
+    // lift the row with an open list, otherwise the rows below paint over it
+    document.querySelectorAll('.row').forEach((r) => r.classList.toggle('dd-open', !!r.querySelector('.adm-sel-list:not(.hidden)')));
 });
 
 function admField(label, inner, full) {

@@ -1,5 +1,7 @@
 # rsg-ranch — Developer Docs
 
+> Version **3.7.1**
+
 ## Dependencies
 `rsg-core`, `rsg-inventory`, `rsg-target`, `rsg-wellpump`, `rsg-society`, `oxmysql`. **No ox_lib, rsg-multijob, rsg-bossmenu or rsg-gangmenu** (removed in 3.2.0; multijob is built into rsg-core).
 
@@ -22,7 +24,10 @@
 ## Menus / dialogs
 Context menus and alert dialogs are this resource's own NUI (`client/menu.lua` → `Menu.registerContext/showContext/hideContext/alertDialog`, `html/app.js`).
 
+Never use native `<select>` in the NUI. Use `admSelect(id, options, selected, style, inputAttrs)` from `html/admin.js`: `$(id).value` reads the pick and the hidden input fires `change`.
+
 ## Changelog
+- **3.7.1** — Replaced the remaining native dropdowns (player pickers, hire grade, storage access) with the custom `admSelect` dropdown.
 - **3.7.0** — Switched fully to rsg-society: boss checks use `rsg-society:IsBoss`, every ranch gets a society, and the `RSGCore.Shared.Jobs` / `multijob_jobs` fallbacks were removed (job definitions only through `GetJobDefinition` / `SaveJobDefinition` / `DeleteJobDefinition`). rsg-society 3.2.1+ is required.
 - **3.2.0** — Migrated off ox_lib to rsg-core (locales, notify, callbacks, cron, progress bar, text UI, model loading); ox_target → rsg-target; rsg-multijob exports → rsg-core multijob functions.
 

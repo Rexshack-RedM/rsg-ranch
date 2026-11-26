@@ -2,6 +2,11 @@
 
 All notable changes to rsg-ranch. Newest first.
 
+## 3.7.1
+
+### Fixed
+- Replaced the last native `<select>` dropdowns (hire player and grade, ownership transfer, storage access), which can crash RedM, with the custom dropdown.
+
 ## 3.7.0
 
 ### Changed

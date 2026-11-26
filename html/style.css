@@ -184,13 +184,12 @@ html, body {
 .wood-btn.small { padding: 5px 9px; font-size: 11px; }
 .wood-btn.danger:hover:not(:disabled) { border-color: var(--rdr-cost-over); }
 
-input, select {
+input {
     font-family: inherit; font-size: 13px; color: var(--rdr-text);
     background: rgba(0,0,0,0.35); border: 1px solid var(--rdr-gold-dim); border-radius: 2px;
     padding: 7px 9px; outline: none; transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
-input:focus, select:focus { border-color: var(--rdr-gold); box-shadow: 0 0 0 2px rgba(201,162,75,0.15); }
-select option { background: #141414; }
+input:focus { border-color: var(--rdr-gold); box-shadow: 0 0 0 2px rgba(201,162,75,0.15); }
 input.qty { width: 58px; text-align: center; }
 .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
 .field label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--rdr-muted); }
@@ -310,7 +309,7 @@ input.qty { width: 58px; text-align: center; }
 .adm-grid .field { margin-bottom: 0; }
 .adm-grid .full { grid-column: 1 / -1; }
 .adm-inline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.adm-inline input, .adm-inline select { min-width: 0; }
+.adm-inline input { min-width: 0; }
 .adm-card {
     padding: 14px; border-radius: 2px; margin-bottom: 14px;
     border: 1px solid rgba(201,162,75,0.18);
@@ -326,6 +325,7 @@ input.qty { width: 58px; text-align: center; }
 
 /* custom dropdown (native <select> popups crash RedM NUI) */
 .adm-select { position: relative; min-width: 160px; }
+.row.dd-open { position: relative; z-index: 5; }
 .adm-sel-btn {
     display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: pointer;
     font-size: 13px; padding: 7px 9px; border-radius: 2px;

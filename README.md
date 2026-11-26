@@ -1,5 +1,7 @@
 # rsg-ranch
 
+**Version 3.7.1**
+
 A complete livestock ranching system for **RedM** servers running the **RSG Framework**. Buy a ranch, hire staff, raise cattle, pigs, sheep and chickens, keep them fed and watered, breed them, collect their produce, and sell or slaughter them for profit, all managed from an in-game ranch menu.
 
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-support-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/rexshack)
@@ -105,7 +107,7 @@ A full NUI dashboard opened at the ranch NPC, with tabs for:
 
 6. **Language** (optional). Set your language in `server.cfg`:
    ```cfg
-   setr ox:locale "en"   # en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru
+   setr rsg:locale "en"   # en, de, el, es, fr, ja, nl, pl, pt-br, ro, ru
    ```
 
 7. Restart the server.

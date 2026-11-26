@@ -94,7 +94,7 @@ function confirmModal(title, text, confirmLabel, onConfirm, danger = false) {
 }
 
 function playerSelect(id, players) {
-    return `<select id="${id}">${players.map((p) => `<option value="${p.id}">${esc(p.name)} (${Math.round(p.distance)}m)</option>`).join('')}</select>`;
+    return admSelect(id, players.map((p) => ({ value: p.id, label: `${p.name} (${Math.round(p.distance)}m)` })));
 }
 
 // ---------- tabs ----------
@@ -222,7 +222,7 @@ function viewStorage() {
         if (s.isOwner) {
             manage += `<button class="wood-btn small muted" data-rename="${esc(st.storageid)}" data-label="${esc(st.label)}">${esc(t('ui_rename'))}</button>`;
             if (!general && levels.length) {
-                manage += `<select data-access="${esc(st.storageid)}">${levels.map((l) => `<option value="${l.grade}" ${l.grade === st.min_grade ? 'selected' : ''}>${esc(l.label)}</option>`).join('')}</select>`;
+                manage += admSelect(`access-${st.storageid}`, levels.map((l) => ({ value: l.grade, label: l.label })), st.min_grade, '', `data-access="${esc(st.storageid)}"`);
             }
         }
         const locked = s.grade < (st.min_grade || 0);
@@ -315,7 +315,7 @@ async function hireFlow() {
     const grades = [{ g: 0, l: t('ui_grade_0') }, { g: 1, l: t('ui_grade_1') }].filter((x) => x.g < state.grade);
     openModal(t('ui_hire'), `
         <div class="field"><label>${esc(t('ui_player'))}</label>${playerSelect('hire-player', players)}</div>
-        <div class="field"><label>${esc(t('ui_grade'))}</label><select id="hire-grade">${grades.map((x) => `<option value="${x.g}">${esc(x.l)}</option>`).join('')}</select></div>`,
+        <div class="field"><label>${esc(t('ui_grade'))}</label>${admSelect('hire-grade', grades.map((x) => ({ value: x.g, label: x.l })))}</div>`,
         [{ label: t('ui_cancel'), muted: true },
          { label: t('ui_hire'), onClick: () => action('hire', { id: $('hire-player').value, grade: $('hire-grade').value }) }]);
 }
@@ -615,7 +615,7 @@ document.querySelectorAll('[data-drag]').forEach((el) => {
     applyDrag(el);
 
     handle.addEventListener('mousedown', (e) => {
-        if (e.button !== 0 || e.target.closest('button, input, select, textarea, a')) return;
+        if (e.button !== 0 || e.target.closest('button, input, textarea, a')) return;
         e.preventDefault();
         const key = el.dataset.drag;
         const start = dragPos[key] || { x: 0, y: 0 };
