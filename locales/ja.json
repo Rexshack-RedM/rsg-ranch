@@ -503,7 +503,7 @@
     "sv_server_description_200": "あなたはこの牧場の登録上の所有者ではありません！",
     "sv_server_description_201": "この牧場は売却できません！",
     "sv_server_description_202": "牧場の売却に失敗しました。もう一度お試しください！",
-    "sv_server_description_203": "%sを$%sで売却しました。スタッフは全員解雇されました。",
+    "sv_server_description_203": "%sを$%sで売却しました（価格の%s%%）。スタッフは全員解雇され、牧場はリセットされました。",
     "sv_server_description_204": "%sが売却され、購入可能になりました！",
     "sv_server_description_205": "動物を繁殖させるには牧場のスタッフである必要があります！",
     "sv_server_description_206": "両方の動物が見つかりませんでした！",

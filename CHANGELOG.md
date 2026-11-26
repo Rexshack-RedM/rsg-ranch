@@ -6,6 +6,7 @@ All notable changes to rsg-ranch. Newest first.
 
 ### Fixed
 - Replaced the last native `<select>` dropdowns (hire player and grade, ownership transfer, storage access), which can crash RedM, with the custom dropdown.
+- The ranch sale message in de, el, es, fr, ja, nl, pl, pt-br and ro now shows the refund percentage and says the ranch was reset, as in English.
 
 ## 3.7.0
 

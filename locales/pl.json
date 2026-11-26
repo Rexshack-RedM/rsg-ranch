@@ -503,7 +503,7 @@
     "sv_server_description_200": "Nie jesteś zarejestrowanym właścicielem tego rancza!",
     "sv_server_description_201": "Tego rancza nie można sprzedać!",
     "sv_server_description_202": "Nie udało się sprzedać rancza, spróbuj ponownie!",
-    "sv_server_description_203": "Sprzedałeś %s za $%s. Cały personel został zwolniony.",
+    "sv_server_description_203": "Sprzedałeś %s za $%s (%s%% ceny). Cały personel został zwolniony, a ranczo zresetowane.",
     "sv_server_description_204": "%s zostało sprzedane i jest dostępne do kupienia!",
     "sv_server_description_205": "Musisz być pracownikiem rancza, aby rozmnażać zwierzęta!",
     "sv_server_description_206": "Nie znaleziono obu zwierząt!",

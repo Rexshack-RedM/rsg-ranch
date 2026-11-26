@@ -503,7 +503,7 @@
     "sv_server_description_200": "Du bist nicht der eingetragene Besitzer dieser Ranch!",
     "sv_server_description_201": "Diese Ranch kann nicht verkauft werden!",
     "sv_server_description_202": "Verkauf der Ranch fehlgeschlagen, bitte versuche es erneut!",
-    "sv_server_description_203": "Du hast %s für $%s verkauft. Das gesamte Personal wurde entlassen.",
+    "sv_server_description_203": "Du hast %s für $%s verkauft (%s%% des Preises). Das gesamte Personal wurde entlassen und die Ranch zurückgesetzt.",
     "sv_server_description_204": "%s wurde verkauft und steht jetzt zum Kauf bereit!",
     "sv_server_description_205": "Du musst Ranchpersonal sein, um Tiere zu züchten!",
     "sv_server_description_206": "Es konnten nicht beide Tiere gefunden werden!",

@@ -503,7 +503,7 @@
     "sv_server_description_200": "Je bent niet de geregistreerde eigenaar van deze ranch!",
     "sv_server_description_201": "Deze ranch kan niet worden verkocht!",
     "sv_server_description_202": "Ranch verkopen mislukt, probeer het opnieuw!",
-    "sv_server_description_203": "Je hebt %s verkocht voor $%s. Al het personeel is ontslagen.",
+    "sv_server_description_203": "Je hebt %s verkocht voor $%s (%s%% van de prijs). Al het personeel is ontslagen en de ranch is gereset.",
     "sv_server_description_204": "%s is verkocht en nu te koop!",
     "sv_server_description_205": "Je moet ranchpersoneel zijn om dieren te fokken!",
     "sv_server_description_206": "Beide dieren konden niet worden gevonden!",

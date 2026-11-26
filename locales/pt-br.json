@@ -503,7 +503,7 @@
     "sv_server_description_200": "Você não é o dono registrado deste rancho!",
     "sv_server_description_201": "Este rancho não pode ser vendido!",
     "sv_server_description_202": "Falha ao vender o rancho, tente novamente!",
-    "sv_server_description_203": "Você vendeu %s por $%s. Todos os funcionários foram dispensados.",
+    "sv_server_description_203": "Você vendeu %s por $%s (%s%% do preço). Todos os funcionários foram dispensados e o rancho foi redefinido.",
     "sv_server_description_204": "%s foi vendido e está disponível para compra!",
     "sv_server_description_205": "Você precisa ser funcionário do rancho para reproduzir animais!",
     "sv_server_description_206": "Não foi possível encontrar os dois animais!",

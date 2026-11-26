@@ -503,7 +503,7 @@
     "sv_server_description_200": "Vous n'êtes pas le propriétaire enregistré de ce ranch !",
     "sv_server_description_201": "Ce ranch ne peut pas être vendu !",
     "sv_server_description_202": "Échec de la vente du ranch, veuillez réessayer !",
-    "sv_server_description_203": "Vous avez vendu %s pour $%s. Tout le personnel a été licencié.",
+    "sv_server_description_203": "Vous avez vendu %s pour $%s (%s%% du prix). Tout le personnel a été licencié et le ranch a été réinitialisé.",
     "sv_server_description_204": "%s a été vendu et est maintenant disponible à l'achat !",
     "sv_server_description_205": "Vous devez faire partie du personnel du ranch pour faire reproduire des animaux !",
     "sv_server_description_206": "Impossible de trouver les deux animaux !",

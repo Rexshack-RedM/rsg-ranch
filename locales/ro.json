@@ -503,7 +503,7 @@
     "sv_server_description_200": "Nu ești proprietarul înregistrat al acestei ferme!",
     "sv_server_description_201": "Această fermă nu poate fi vândută!",
     "sv_server_description_202": "Vânzarea fermei a eșuat, încearcă din nou!",
-    "sv_server_description_203": "Ai vândut %s cu $%s. Tot personalul a fost concediat.",
+    "sv_server_description_203": "Ai vândut %s cu $%s (%s%% din preț). Tot personalul a fost concediat, iar ferma a fost resetată.",
     "sv_server_description_204": "%s a fost vândută și este acum disponibilă pentru cumpărare!",
     "sv_server_description_205": "Trebuie să faci parte din personalul fermei ca să reproduci animale!",
     "sv_server_description_206": "Nu au putut fi găsite ambele animale!",

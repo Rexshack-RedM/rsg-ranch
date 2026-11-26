@@ -503,7 +503,7 @@
     "sv_server_description_200": "¡No eres el propietario registrado de este rancho!",
     "sv_server_description_201": "¡Este rancho no se puede vender!",
     "sv_server_description_202": "¡No se pudo vender el rancho, inténtalo de nuevo!",
-    "sv_server_description_203": "Has vendido %s por $%s. Todo el personal ha sido despedido.",
+    "sv_server_description_203": "Has vendido %s por $%s (%s%% del precio). Todo el personal ha sido despedido y el rancho se ha restablecido.",
     "sv_server_description_204": "¡%s se ha vendido y ya está disponible para comprar!",
     "sv_server_description_205": "¡Debes ser personal del rancho para criar animales!",
     "sv_server_description_206": "¡No se encontraron ambos animales!",
